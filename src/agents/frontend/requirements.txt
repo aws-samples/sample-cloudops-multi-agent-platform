@@ -1,0 +1,14 @@
+# Pinned to specific versions known to work together. Unpinned, the
+# Docker layer cache freezes whatever PyPI returned at first build —
+# but a `requirements.txt` change forces re-resolution and can pull in
+# a breaking version (we hit this when ag-ui-strands 0.1.9 added
+# `replay_history_into_strands` which clobbered our injected history).
+# Bump versions deliberately, retest, then update these pins.
+strands-agents[a2a,otel]==1.40.0
+strands-agents-tools==0.5.3
+bedrock-agentcore[strands-agents]==1.10.0
+boto3==1.43.12
+fastapi==0.136.1
+uvicorn[standard]==0.47.0
+aws-opentelemetry-distro==0.17.0
+ag-ui-strands==0.1.9

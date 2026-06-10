@@ -1,0 +1,31 @@
+# Shared configuration keys — single source of truth.
+#
+# These are the env-var names that SSM/terraform own. Listed here so that:
+#   * deploy.sh can capture CLI-set values before sourcing .env and translate
+#     them into `-var=<lowercase>=<value>` flags (see scripts/deploy.sh).
+#   * `make setup` can detect legacy copies of these in an existing .env and
+#     offer to strip them (see _cmd_setup_migrate_stale_env in commands.sh).
+#
+# Adding a new shared key: add a line here AND a matching variable in
+# terraform/modules/core/shared-config/variables.tf. The bash side reads this
+# file at runtime; the terraform side is checked at plan time.
+#
+# Blank lines and comments are ignored.
+
+AWS_REGION
+IDP_TYPE
+CUSTOM_IDP_ISSUER_URL
+CUSTOM_IDP_CLIENT_ID
+CUSTOM_IDP_CLIENT_SECRET
+APP_URL
+GATEWAY_AUTH
+DEPLOY_AGENTS
+DEPLOY_TOOLS
+DEPLOY_MODE
+CROSS_ACCOUNT_ROLE_ARN_TAG_GOVERNANCE
+MEMORY_ID
+BEDROCK_MODEL_ID
+HEALTH_ENRICHMENT_MODEL_ID
+HEALTH_EVENTS_CROSS_ACCOUNT_ROLE_ARN
+# NETWORK_RESILIENCE_CROSS_ACCOUNT_ROLE_ARNS — list-typed at the root, no
+# clean -var=... translation; lives in tfvars + SSM only (no CLI override).

@@ -1,0 +1,197 @@
+"""Unit tests for agents.shared.memory — manual memory management."""
+
+import re
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from agents.shared.memory import (
+    build_enriched_text,
+    load_history,
+    save_assistant_message,
+    save_user_message,
+)
+
+
+class TestBuildEnrichedText:
+    def test_text_only(self):
+        segments = [{"type": "text", "value": "Hello world"}]
+        assert build_enriched_text(segments) == "Hello world"
+
+    def test_thinking_wrapped_in_tags(self):
+        segments = [{"type": "thinking", "value": "reasoning here"}]
+        assert build_enriched_text(segments) == "<think>reasoning here</think>"
+
+    def test_tool_wrapped_in_tags(self):
+        segments = [{"type": "tool", "value": '{"name":"test"}'}]
+        assert build_enriched_text(segments) == '<tool>{"name":"test"}</tool>'
+
+    def test_suggestions_wrapped_in_tags(self):
+        segments = [{"type": "suggestions", "value": '["q1","q2"]'}]
+        assert build_enriched_text(segments) == '<suggestions>["q1","q2"]</suggestions>'
+
+    def test_interleaved_segments(self):
+        segments = [
+            {"type": "thinking", "value": "hmm"},
+            {"type": "tool", "value": '{"n":"t"}'},
+            {"type": "text", "value": "result"},
+            {"type": "suggestions", "value": '["a"]'},
+        ]
+        result = build_enriched_text(segments)
+        assert "<think>hmm</think>" in result
+        assert '<tool>{"n":"t"}</tool>' in result
+        assert "result" in result
+        assert '<suggestions>["a"]</suggestions>' in result
+
+    def test_consecutive_text_merged(self):
+        segments = [
+            {"type": "text", "value": "Hello "},
+            {"type": "text", "value": "world"},
+        ]
+        result = build_enriched_text(segments)
+        assert "Hello world" in result
+
+    def test_empty_segments(self):
+        assert build_enriched_text([]) == ""
+
+
+class TestLoadHistory:
+    def test_returns_empty_when_no_memory_id(self):
+        assert load_history("", "sess", "actor") == []
+
+    def test_returns_empty_when_no_session_id(self):
+        assert load_history("mem", "", "actor") == []
+
+    def test_returns_empty_when_no_actor_id(self):
+        assert load_history("mem", "sess", "") == []
+
+    @patch("agents.shared.memory._get_client")
+    def test_strips_artifact_tags(self, mock_get):
+        client = MagicMock()
+        client.list_events.return_value = {
+            "events": [
+                {
+                    "payload": [
+                        {
+                            "conversational": {
+                                "role": "ASSISTANT",
+                                "content": {"text": "Hello<artifact>meta</artifact>"},
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+        mock_get.return_value = client
+        msgs = load_history("mem", "sess", "actor")
+        assert len(msgs) == 1
+        assert "<artifact>" not in msgs[0]["content"][0]["text"]
+
+    @patch("agents.shared.memory._get_client")
+    def test_strips_suggestions_tags(self, mock_get):
+        client = MagicMock()
+        client.list_events.return_value = {
+            "events": [
+                {
+                    "payload": [
+                        {
+                            "conversational": {
+                                "role": "ASSISTANT",
+                                "content": {
+                                    "text": 'Answer\n<suggestions>["q"]</suggestions>'
+                                },
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+        mock_get.return_value = client
+        msgs = load_history("mem", "sess", "actor")
+        assert "<suggestions>" not in msgs[0]["content"][0]["text"]
+
+    @patch("agents.shared.memory._get_client")
+    def test_preserves_tool_tags(self, mock_get):
+        # `<tool>` tags are evidence of prior-turn tool calls — they let the
+        # model resolve references like "the diagram above" or "that chart"
+        # via the no-fabrication preamble's vocabulary clause. Stripping them
+        # was the old behaviour (display-layer cleanup); now they're kept.
+        client = MagicMock()
+        client.list_events.return_value = {
+            "events": [
+                {
+                    "payload": [
+                        {
+                            "conversational": {
+                                "role": "ASSISTANT",
+                                "content": {"text": "<tool>{}</tool>Real answer"},
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+        mock_get.return_value = client
+        msgs = load_history("mem", "sess", "actor")
+        assert "<tool>{}</tool>" in msgs[0]["content"][0]["text"]
+        assert "Real answer" in msgs[0]["content"][0]["text"]
+
+    @patch("agents.shared.memory._get_client")
+    def test_preserves_report_body_tags(self, mock_get):
+        client = MagicMock()
+        client.list_events.return_value = {
+            "events": [
+                {
+                    "payload": [
+                        {
+                            "conversational": {
+                                "role": "ASSISTANT",
+                                "content": {
+                                    "text": "<report-body>Report content</report-body>"
+                                },
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+        mock_get.return_value = client
+        msgs = load_history("mem", "sess", "actor")
+        assert "<report-body>" in msgs[0]["content"][0]["text"]
+
+    @patch("agents.shared.memory._get_client")
+    def test_returns_empty_on_not_found(self, mock_get):
+        client = MagicMock()
+        client.list_events.side_effect = Exception("Session not found")
+        mock_get.return_value = client
+        assert load_history("mem", "sess", "actor") == []
+
+
+class TestSaveUserMessage:
+    @patch("agents.shared.memory._get_client")
+    def test_calls_create_event(self, mock_get):
+        client = MagicMock()
+        mock_get.return_value = client
+        save_user_message("mem", "sess", "actor", "hello")
+        client.create_event.assert_called_once()
+        call_kwargs = client.create_event.call_args[1]
+        assert call_kwargs["memoryId"] == "mem"
+        assert call_kwargs["sessionId"] == "sess"
+        assert call_kwargs["actorId"] == "actor"
+
+    def test_skips_when_no_memory_id(self):
+        # Should not raise
+        save_user_message("", "sess", "actor", "hello")
+
+
+class TestSaveAssistantMessage:
+    @patch("agents.shared.memory._get_client")
+    def test_calls_create_event(self, mock_get):
+        client = MagicMock()
+        mock_get.return_value = client
+        save_assistant_message("mem", "sess", "actor", "response text")
+        client.create_event.assert_called_once()
+
+    def test_skips_empty_text(self):
+        # Should not raise
+        save_assistant_message("mem", "sess", "actor", "   ")

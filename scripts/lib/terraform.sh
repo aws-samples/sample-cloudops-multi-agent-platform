@@ -1,0 +1,251 @@
+#!/usr/bin/env bash
+# Terraform operations — bootstrap, tfvars generation, plan/apply/destroy
+# ---------------------------------------------------------------------------
+# Bootstrap — Terraform State Backend (CloudFormation)
+# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# ensure_terraform_init — run `terraform init` only when needed.
+#
+# `terraform init` costs ~3s per deploy; the work it does (download providers,
+# link modules, validate backend) is deterministic once run. This gate
+# re-inits when:
+#   * `.terraform/` doesn't exist (fresh clone or `make clean`),
+#   * the backend fingerprint (bucket:lock_table:region) changed since last
+#     init (e.g. the team switched to a new state backend),
+#   * the caller sets `FORCE_TF_INIT=1` (escape hatch for module/provider
+#     upgrades — a new module source or provider version bump does require
+#     re-init, and terraform will error loudly if skipped, but this env var
+#     lets you front-run the error).
+# -----------------------------------------------------------------------------
+ensure_terraform_init() {
+  local init_fp="${S3_BUCKET}:${DYNAMODB_TABLE}:${AWS_REGION}"
+  local fp_file="$TERRAFORM_DIR/.terraform/.cloudops-init-fingerprint"
+  local stored_fp=""
+  [ -f "$fp_file" ] && stored_fp=$(cat "$fp_file" 2>/dev/null || echo "")
+
+  # When the backend bucket/lock-table name differs from the last init,
+  # Terraform refuses to proceed ("Backend configuration changed") unless
+  # we pass -reconfigure. This matters for: (a) swapping namespaces on
+  # the same workstation (e.g. Layer 3 topology tests vs dev), and
+  # (b) any manual FORCE_TF_INIT=1 override.
+  local reconfigure_arg=""
+  if [ "$init_fp" != "$stored_fp" ] || [ -n "${FORCE_TF_INIT:-}" ]; then
+    reconfigure_arg="-reconfigure"
+  fi
+
+  # Also check if any module sources are missing from .terraform/modules
+  local needs_init=false
+  if [ ! -d "$TERRAFORM_DIR/.terraform" ] \
+     || [ "$init_fp" != "$stored_fp" ] \
+     || [ -n "${FORCE_TF_INIT:-}" ]; then
+    needs_init=true
+  elif [ -d "$TERRAFORM_DIR/.terraform" ]; then
+    # Detect new modules not yet installed (avoids "Module not installed" errors)
+    local modules_json="$TERRAFORM_DIR/.terraform/modules/modules.json"
+    if [ -f "$modules_json" ]; then
+      local declared_modules
+      declared_modules=$(grep -oE 'source\s*=\s*"./modules/[^"]+' "$TERRAFORM_DIR/main.tf" | sed 's|source *= *"||' | sort -u)
+      for mod_path in $declared_modules; do
+        if ! grep -q "$mod_path" "$modules_json" 2>/dev/null; then
+          info "New module detected ($mod_path) — terraform init required"
+          needs_init=true
+          reconfigure_arg="-reconfigure"
+          break
+        fi
+      done
+    fi
+  fi
+
+  if [ "$needs_init" = true ]; then
+    info "Running terraform init${reconfigure_arg:+ $reconfigure_arg}..."
+    terraform -chdir="$TERRAFORM_DIR" init \
+      ${reconfigure_arg} \
+      -backend-config="bucket=${S3_BUCKET}" \
+      -backend-config="dynamodb_table=${DYNAMODB_TABLE}" \
+      -backend-config="region=${AWS_REGION}" \
+      || die "terraform init failed"
+    echo "$init_fp" > "$fp_file"
+  else
+    info "terraform init: .terraform is warm, skipping (set FORCE_TF_INIT=1 to force)"
+  fi
+}
+
+bootstrap_state_backend() {
+  local stack_name="${PROJECT_PREFIX}-${ENVIRONMENT}-tf-bootstrap"
+
+  # Check if state bucket already exists
+  if aws s3api head-bucket --bucket "$S3_BUCKET" > /dev/null 2>&1; then
+    info "State bucket $S3_BUCKET already exists, skipping bootstrap"
+    return
+  fi
+
+  info "Bootstrapping Terraform state backend via CloudFormation..."
+  aws cloudformation deploy \
+    --stack-name "$stack_name" \
+    --template-file "$TERRAFORM_DIR/bootstrap.yaml" \
+    --parameter-overrides \
+      ProjectPrefix="$PROJECT_PREFIX" \
+      Environment="$ENVIRONMENT" \
+    --no-fail-on-empty-changeset \
+    --region "$AWS_REGION" \
+    || die "Bootstrap CloudFormation deploy failed"
+
+  info "Bootstrap stack $stack_name deployed"
+}
+generate_tfvars() {
+  local tfvars_file="$TERRAFORM_DIR/terraform.tfvars"
+  info "Generating $tfvars_file..."
+
+  local agents_hcl
+  if [ ${#SELECTED_AGENTS[@]} -gt 0 ]; then
+    agents_hcl=$(printf ', "%s"' "${SELECTED_AGENTS[@]}")
+    agents_hcl="[${agents_hcl:2}]"
+  else
+    agents_hcl="[]"
+  fi
+
+  # terraform.tfvars holds deploy-time inputs ONLY — things derived from the
+  # current CLI invocation (selected agents/tools, built image URIs) or the
+  # Terraform state backend bucket/lock. Shared project config (aws_region,
+  # idp_type, custom_idp_*, app_url, gateway_auth, tool_env_vars) lives in
+  # terraform/config.auto.tfvars.json, written by `make configure` and
+  # auto-loaded by Terraform AFTER this file so its values take precedence.
+  # Having each key in exactly one place avoids the silent-override class of
+  # bugs.
+  cat > "$tfvars_file" <<EOF
+# Generated by deploy.sh — $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+# Project: ${PROJECT_PREFIX}-${ENVIRONMENT}
+# Mode: ${DEPLOY_MODE}
+
+project_tag      = "${PROJECT_PREFIX}"
+environment_tag  = "${ENVIRONMENT}"
+s3_bucket        = "${S3_BUCKET}"
+dynamodb_table   = "${DYNAMODB_TABLE}"
+supervisor_image = "$(get_agent_image "$FRONTEND_AGENT")"
+selected_agents  = ${agents_hcl}
+
+# Deployment mode flags
+deploy_agents    = ${DEPLOY_FLAG_AGENTS}
+deploy_gateway   = ${DEPLOY_FLAG_GATEWAY}
+deploy_tools     = ${DEPLOY_FLAG_TOOLS}
+deploy_frontend  = ${DEPLOY_FLAG_FRONTEND}
+deploy_cognito   = ${DEPLOY_FLAG_COGNITO}
+deploy_memory    = ${DEPLOY_FLAG_MEMORY}
+EOF
+
+  # Selected tools
+  if [ ${#SELECTED_TOOLS[@]} -gt 0 ]; then
+    local tools_hcl
+    tools_hcl=$(printf ', "%s"' "${SELECTED_TOOLS[@]}")
+    tools_hcl="[${tools_hcl:2}]"
+    echo "selected_tools   = ${tools_hcl}" >> "$tfvars_file"
+  else
+    echo "selected_tools   = []" >> "$tfvars_file"
+  fi
+
+  # Per-agent image URIs
+  echo "" >> "$tfvars_file"
+  echo "agent_images = {" >> "$tfvars_file"
+  if [ ${#SELECTED_AGENTS[@]} -gt 0 ]; then
+    for agent in "${SELECTED_AGENTS[@]}"; do
+      if [ "$agent" = "$FRONTEND_AGENT" ]; then
+        continue
+      fi
+      local image
+      image=$(get_agent_image "$agent")
+      if [ -n "$image" ]; then
+        echo "  \"${agent}\" = \"${image}\"" >> "$tfvars_file"
+      fi
+    done
+  fi
+  echo "}" >> "$tfvars_file"
+
+  info "Generated $tfvars_file"
+}
+
+# ---------------------------------------------------------------------------
+# Terraform Execution
+# ---------------------------------------------------------------------------
+run_terraform() {
+  local action="$1"
+
+  # Provenance banner — shows which SSM prefix is sourcing values, plus
+  # populated/total counts. Silent on first-run / missing creds.
+  shared_config_print_summary 2>/dev/null || true
+
+  # Workaround: TF provider v6.36 crashes on read if frontend agent has AGUI protocol.
+  # Temporarily revert to HTTP before Terraform runs, then deploy.sh post-deploy
+  # sync sets AGUI back. Needed for both apply and destroy.
+  # Only relevant when agents are deployed.
+  if [ "$DEPLOY_FLAG_AGENTS" = true ]; then
+  local sup_runtime_id
+  sup_runtime_id=$(tf_output agentcore_runtime_id)
+    if [ -n "$sup_runtime_id" ] && [ "$sup_runtime_id" != "" ]; then
+      .venv/bin/python -c "
+import boto3
+client = boto3.client('bedrock-agentcore-control', region_name='${AWS_REGION}')
+try:
+    rt = client.get_agent_runtime(agentRuntimeId='${sup_runtime_id}')
+    proto = rt.get('protocolConfiguration', {}).get('serverProtocol', '')
+    if proto == 'AGUI':
+        kwargs = dict(
+            agentRuntimeId='${sup_runtime_id}',
+            agentRuntimeArtifact=rt['agentRuntimeArtifact'],
+            roleArn=rt['roleArn'],
+            networkConfiguration=rt['networkConfiguration'],
+            environmentVariables=rt.get('environmentVariables', {}),
+            protocolConfiguration={'serverProtocol': 'HTTP'},
+        )
+        if rt.get('authorizerConfiguration'):
+            kwargs['authorizerConfiguration'] = rt['authorizerConfiguration']
+        client.update_agent_runtime(**kwargs)
+        print('Temporarily reverted ${FRONTEND_AGENT} protocol to HTTP for Terraform')
+    else:
+        print(f'${FRONTEND_AGENT} protocol is {proto}, no revert needed')
+except Exception as e:
+    print(f'Protocol revert skipped: {e}')
+" 2>&1 || true
+    fi
+  fi  # end DEPLOY_FLAG_AGENTS check
+
+  ensure_terraform_init
+
+  # `-var` beats `*.auto.tfvars.json` in Terraform's precedence chain, so
+  # we forward CLI-captured overrides (populated in deploy.sh before .env
+  # was sourced) via -var flags. See load_tf_overrides in common.sh.
+  local _TF_OVERRIDES
+  load_tf_overrides
+
+  case "$action" in
+    plan)
+      info "Running terraform plan..."
+      terraform -chdir="$TERRAFORM_DIR" plan "${_TF_OVERRIDES[@]+"${_TF_OVERRIDES[@]}"}" || die "Terraform plan failed"
+      ;;
+    apply)
+      if [ "$AUTO_APPROVE" = true ]; then
+        info "Running terraform apply (auto-approve)..."
+        terraform -chdir="$TERRAFORM_DIR" apply -auto-approve "${_TF_OVERRIDES[@]+"${_TF_OVERRIDES[@]}"}" || die "Terraform apply failed"
+      else
+        info "Running terraform plan..."
+        terraform -chdir="$TERRAFORM_DIR" plan -out=tfplan "${_TF_OVERRIDES[@]+"${_TF_OVERRIDES[@]}"}" || die "Terraform plan failed"
+        # `apply tfplan` rejects -var (overrides are baked into the plan file).
+        info "Running terraform apply..."
+        terraform -chdir="$TERRAFORM_DIR" apply tfplan || die "Terraform apply failed"
+      fi
+      ;;
+    destroy)
+      if [ "$AUTO_APPROVE" = true ]; then
+        warn "Destroying all infrastructure (auto-approve)..."
+        terraform -chdir="$TERRAFORM_DIR" destroy -auto-approve "${_TF_OVERRIDES[@]+"${_TF_OVERRIDES[@]}"}" || die "Terraform destroy failed"
+      else
+        warn "This will DESTROY all infrastructure."
+        read -rp "Type 'destroy' to confirm: " confirm
+        [ "$confirm" = "destroy" ] || { info "Cancelled."; exit 0; }
+        terraform -chdir="$TERRAFORM_DIR" destroy "${_TF_OVERRIDES[@]+"${_TF_OVERRIDES[@]}"}" || die "Terraform destroy failed"
+      fi
+      ;;
+  esac
+
+  info "Terraform $action completed successfully"
+}
+

@@ -1,0 +1,399 @@
+{
+  "homeAccountId": "123456789012",
+  "bgpPrefixMetrics": {
+    "dxvif-high01": {
+      "accepted": 42,
+      "advertised": 15
+    },
+    "dxvif-high02": {
+      "accepted": 38,
+      "advertised": 15
+    }
+  },
+  "maintenanceEvents": [
+    {
+      "arn": "arn:aws:health:us-east-1::event/DIRECTCONNECT/AWS_DIRECTCONNECT_MAINTENANCE_SCHEDULED/mock-event-001",
+      "eventTypeCode": "AWS_DIRECTCONNECT_MAINTENANCE_SCHEDULED",
+      "region": "ap-southeast-1",
+      "startTime": "2026-05-14T19:00:00.000Z",
+      "endTime": "2026-05-14T22:00:00.000Z",
+      "statusCode": "upcoming",
+      "affectedResourceIds": [
+        "dxcon-high001",
+        "dxvif-high01"
+      ],
+      "accountId": "123456789012",
+      "description": "Reminder: AWS Direct Connect Planned Maintenance Notification [AWS Account: 123456789012]  Planned maintenance has been scheduled on an AWS Direct Connect endpoint in Equinix SG2, Singapore from Thu, 14 May 2026 19:00:00 GMT to Thu, 14 May 2026 22:00:00 GMT for 3 hours. During this maintenance window, your AWS Direct Connect services listed below may become unavailable.\n\ndxvif-high01\ndxcon-high001\n\nThis maintenance is scheduled to avoid disrupting redundant connections at the same time.\n\nIf you encounter any problems with your connection after the end of this maintenance window, please contact AWS Support[1].\n\n[1] https://aws.amazon.com/support"
+    }
+  ],
+  "locations": [
+    {
+      "locationCode": "EqSG2",
+      "locationName": "Equinix SG2 (Singapore)",
+      "region": "ap-southeast-1",
+      "availablePortSpeeds": [
+        "1Gbps",
+        "10Gbps"
+      ]
+    },
+    {
+      "locationCode": "EqSG3",
+      "locationName": "Global Switch SG (Singapore)",
+      "region": "ap-southeast-1",
+      "availablePortSpeeds": [
+        "1Gbps",
+        "10Gbps"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "connectionId": "dxcon-high001",
+      "connectionName": "DX-SG2-Primary",
+      "connectionState": "available",
+      "location": "EqSG2",
+      "bandwidth": "1Gbps",
+      "region": "ap-southeast-1",
+      "hasBfd": true,
+      "awsDeviceV2": "EqSG2-1a2b3c4d",
+      "awsLogicalDeviceId": "EqSG2-lg1a"
+    },
+    {
+      "connectionId": "dxcon-high002",
+      "connectionName": "DX-SG3-Primary",
+      "connectionState": "available",
+      "location": "EqSG3",
+      "bandwidth": "1Gbps",
+      "region": "ap-southeast-1",
+      "hasBfd": false,
+      "awsDeviceV2": "EqSG3-9i0j1k2l",
+      "awsLogicalDeviceId": "EqSG3-lg2a"
+    }
+  ],
+  "virtualInterfaces": [
+    {
+      "virtualInterfaceId": "dxvif-high01",
+      "virtualInterfaceName": "Transit-VIF-SG2",
+      "virtualInterfaceType": "transit",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-high001",
+      "directConnectGatewayId": "dxgw-high01",
+      "vlan": 100,
+      "asn": 65000,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-h01",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 65000,
+          "customerAddress": "169.254.0.2/30",
+          "amazonAddress": "169.254.0.1/30"
+        }
+      ],
+      "region": "ap-southeast-1",
+      "awsDeviceV2": "EqSG2-1a2b3c4d",
+      "awsLogicalDeviceId": "EqSG2-lg1a"
+    },
+    {
+      "virtualInterfaceId": "dxvif-high02",
+      "virtualInterfaceName": "Transit-VIF-SG3",
+      "virtualInterfaceType": "transit",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-high002",
+      "directConnectGatewayId": "dxgw-high01",
+      "vlan": 200,
+      "asn": 65001,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-h02",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 65001,
+          "customerAddress": "169.254.1.2/30",
+          "amazonAddress": "169.254.1.1/30"
+        }
+      ],
+      "region": "ap-southeast-1",
+      "awsDeviceV2": "EqSG3-9i0j1k2l",
+      "awsLogicalDeviceId": "EqSG3-lg2a"
+    }
+  ],
+  "dxGateways": [
+    {
+      "directConnectGatewayId": "dxgw-high01",
+      "directConnectGatewayName": "High-Resiliency-DX-Gateway",
+      "amazonSideAsn": 64512,
+      "directConnectGatewayState": "available"
+    }
+  ],
+  "dxGatewayAssociations": [
+    {
+      "directConnectGatewayId": "dxgw-high01",
+      "associatedGateway": {
+        "id": "tgw-high01",
+        "type": "transitGateway",
+        "region": "ap-southeast-1",
+        "ownerAccount": "123456789012"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.0.0.0/8",
+        "172.16.0.0/12"
+      ]
+    }
+  ],
+  "lags": [],
+  "vpcs": [
+    {
+      "vpcId": "vpc-high01",
+      "cidrBlock": "10.0.0.0/16",
+      "tags": {
+        "Name": "Production-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-high02",
+      "cidrBlock": "10.1.0.0/16",
+      "tags": {
+        "Name": "Staging-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-high03",
+      "cidrBlock": "10.2.0.0/16",
+      "tags": {
+        "Name": "Dev-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    }
+  ],
+  "vpnGateways": [],
+  "vpnConnections": [
+    {
+      "vpnConnectionId": "vpn-high01",
+      "transitGatewayId": "tgw-high01",
+      "customerGatewayId": "cgw-high01",
+      "state": "available",
+      "type": "ipsec.1",
+      "category": "VPN",
+      "customerGatewayAddress": "203.0.113.10",
+      "tunnels": [
+        {
+          "outsideIpAddress": "52.46.128.1",
+          "status": "UP",
+          "acceptedRouteCount": 5,
+          "dpdTimeoutSeconds": 30,
+          "dpdTimeoutAction": "restart"
+        },
+        {
+          "outsideIpAddress": "52.46.128.2",
+          "status": "UP",
+          "acceptedRouteCount": 5,
+          "dpdTimeoutSeconds": 30,
+          "dpdTimeoutAction": "restart"
+        }
+      ],
+      "tags": {
+        "Name": "VPN-Backup-Primary"
+      }
+    }
+  ],
+  "customerGateways": [
+    {
+      "customerGatewayId": "cgw-high01",
+      "bgpAsn": "65100",
+      "ipAddress": "203.0.113.10",
+      "state": "available",
+      "type": "ipsec.1",
+      "tags": {
+        "Name": "OnPrem-Router-VPN"
+      }
+    }
+  ],
+  "transitGateways": [
+    {
+      "transitGatewayId": "tgw-high01",
+      "transitGatewayArn": "arn:aws:ec2:ap-southeast-1:123456789012:transit-gateway/tgw-high01",
+      "state": "available",
+      "ownerId": "123456789012",
+      "description": "Production Transit Gateway",
+      "amazonSideAsn": 64512,
+      "tags": {
+        "Name": "Prod-TGW"
+      }
+    }
+  ],
+  "transitGatewayAttachments": [
+    {
+      "transitGatewayAttachmentId": "tgw-attach-h01",
+      "transitGatewayId": "tgw-high01",
+      "resourceType": "vpc",
+      "resourceId": "vpc-high01",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-h02",
+      "transitGatewayId": "tgw-high01",
+      "resourceType": "vpc",
+      "resourceId": "vpc-high02",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-h03",
+      "transitGatewayId": "tgw-high01",
+      "resourceType": "vpc",
+      "resourceId": "vpc-high03",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-hdx",
+      "transitGatewayId": "tgw-high01",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-high01",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-hvpn",
+      "transitGatewayId": "tgw-high01",
+      "resourceType": "vpn",
+      "resourceId": "vpn-high01",
+      "resourceOwnerId": "",
+      "state": "available"
+    }
+  ],
+  "transitGatewayPeeringAttachments": [],
+  "vpcPeerings": [
+    {
+      "vpcPeeringConnectionId": "pcx-high01",
+      "state": "active",
+      "requesterVpc": {
+        "vpcId": "vpc-high01",
+        "cidrBlock": "10.0.0.0/16",
+        "ownerId": "123456789012",
+        "region": "ap-southeast-1"
+      },
+      "accepterVpc": {
+        "vpcId": "vpc-high02",
+        "cidrBlock": "10.1.0.0/16",
+        "ownerId": "123456789012",
+        "region": "ap-southeast-1"
+      },
+      "tags": {
+        "Name": "Prod-to-Staging"
+      }
+    },
+    {
+      "vpcPeeringConnectionId": "pcx-high02",
+      "state": "active",
+      "requesterVpc": {
+        "vpcId": "vpc-high03",
+        "cidrBlock": "10.2.0.0/16",
+        "ownerId": "123456789012",
+        "region": "ap-southeast-1"
+      },
+      "accepterVpc": {
+        "vpcId": "vpc-shared01",
+        "cidrBlock": "172.16.0.0/16",
+        "ownerId": "999999999999",
+        "region": "ap-southeast-1"
+      },
+      "tags": {
+        "Name": "Dev-to-SharedServices"
+      }
+    }
+  ],
+  "tgwRouteTables": {
+    "tgw-high01": [
+      {
+        "routeTable": {
+          "transitGatewayRouteTableId": "tgw-rtb-high01",
+          "transitGatewayId": "tgw-high01",
+          "state": "available",
+          "defaultAssociationRouteTable": true,
+          "defaultPropagationRouteTable": true,
+          "tags": {
+            "Name": "tgw-high01-default-rtb"
+          }
+        },
+        "routes": [
+          {
+            "destinationCidrBlock": "10.0.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-h01",
+                "resourceType": "vpc",
+                "resourceId": "vpc-0"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.1.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-h02",
+                "resourceType": "vpc",
+                "resourceId": "vpc-1"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.2.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-h03",
+                "resourceType": "vpc",
+                "resourceId": "vpc-2"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "transitGatewayAttachments": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      }
+    ]
+  },
+  "cloudWanCoreNetworks": [],
+  "cloudWanAttachments": [],
+  "cloudWanPeerings": [],
+  "cloudWanRoutes": {},
+  "connectionUtilization": {
+    "dxcon-high001": {
+      "ingressBpsPeak": 360000000,
+      "egressBpsPeak": 420000000
+    },
+    "dxcon-high002": {
+      "ingressBpsPeak": 370000000,
+      "egressBpsPeak": 490000000
+    }
+  },
+  "vifUtilization": {
+    "dxvif-high01": {
+      "ingressBpsPeak": 280500000,
+      "egressBpsPeak": 476000000
+    },
+    "dxvif-high02": {
+      "ingressBpsPeak": 289000000,
+      "egressBpsPeak": 535500000
+    }
+  },
+  "utilizationWindowDays": 30
+}

@@ -1,0 +1,43 @@
+{
+    "name": "Direct Connect Resilience Review",
+    "description": "Multi-section AWS Direct Connect resilience assessment covering per-DXGW scoring, critical findings, ghost-node recommendations, best-practice checklist, and cost-to-reach-target estimates.",
+    "sections": [
+        {
+            "id": "executive_summary",
+            "title": "Executive Summary",
+            "prompt": "You are writing Section 1 (Executive Summary) of the Direct Connect Resilience Review.\n\nCall `discover_dx_topology` if the topology isn't already in context, then call `assess_dx_resiliency` with default targets. From the returned CombinedAssessment, produce a 4-part summary:\n\n1. **Overall posture** — describe the distribution of DXGW tiers (e.g. \"2 of 4 gateways at Maximum, 1 at High, 1 at None\"). Do NOT invent or quote any aggregate /100 score — resiliency is reported per DX Gateway only.\n2. **DXGW inventory** — total number of DX Gateways, how many are at each tier (none / devtest / high / maximum), and the lowest-tier gateway.\n3. **Top findings** — 3 highest-severity recommendations from the assessment (critical first, then warning), one short sentence each.\n4. **Headline metric** — one line summarising whether each gateway currently qualifies for the 99.9% (High) and 99.99% (Maximum) DX SLAs.\n\nDisplay results as tight markdown. Use a small table for the DXGW tier breakdown. Do NOT include follow-up questions or suggestions."
+        },
+        {
+            "id": "per_dxgw_assessment",
+            "title": "Per-DXGW Assessment",
+            "prompt": "You are writing Section 2 (Per-DXGW Assessment) of the Direct Connect Resilience Review.\n\nFor every DX Gateway in the `perDxGateway` array returned by `assess_dx_resiliency`, render a short block containing:\n\n- Gateway name and ID (as a heading).\n- Current tier + target tier (none / devtest / high / maximum). Do NOT show or invent a /100 score.\n- Location count, connection count, AWS logical-device count.\n- A short bulleted list of findings scoped to this gateway (severity + title only — full descriptions go in later sections).\n\nIf the topology has more than 6 DX Gateways, group them by current tier and collapse any gateway already at Maximum into a one-line entry (\"Gateway X — at Max tier, no action required\").\n\nDo NOT include follow-up questions or suggestions."
+        },
+        {
+            "id": "critical_findings",
+            "title": "Critical Findings",
+            "prompt": "You are writing Section 3 (Critical Findings) of the Direct Connect Resilience Review.\n\nFrom the aggregated `resiliency.recommendations` and `bestPractice.recommendations` returned by `assess_dx_resiliency`, list every recommendation with severity `critical` or `warning`. For each:\n\n- Severity badge (🔴 critical, 🟡 warning).\n- Title.\n- One-paragraph description quoting the rule's own language.\n- Affected resources (DXGW ID, location, VIF ID, etc. — extracted from the rule ID or description).\n\nIf `critical_findings` resolves to an empty list (everything is `info` severity), output a single line: \"No critical or warning-severity findings — see Section 5 for advisory items.\"\n\nDo NOT include follow-up questions or suggestions."
+        },
+        {
+            "id": "recommended_infrastructure",
+            "title": "Recommended Infrastructure Changes",
+            "prompt": "You are writing Section 4 (Recommended Infrastructure Changes) of the Direct Connect Resilience Review.\n\nFrom the per-DXGW recommendations returned by `assess_dx_resiliency`, describe each ghost-node recommendation in prose:\n\n- What to add (new DX location, second connection, LAG, etc.).\n- Where it goes (location code, AWS logical device, DXGW attachment).\n- What it unlocks (next SLA tier: 99.9% High → 99.99% Maximum).\n- Explicit pre-conditions (needs 2+ AWS logical devices per location for Max tier).\n\nGroup by target tier (items needed to reach High first, then Max). If a recommendation has no `additionalNodes` array (best-practice rule with no topology change), skip it here — it belongs in Section 5.\n\nDo NOT include follow-up questions or suggestions."
+        },
+        {
+            "id": "best_practices_checklist",
+            "title": "Best Practices Checklist",
+            "prompt": "You are writing Section 5 (Best Practices Checklist) of the Direct Connect Resilience Review.\n\nFrom `assess_dx_resiliency`'s best-practice annotations and recommendations, build a table with columns:\n\n| Practice | Status | Affected DXGW | Notes |\n\nStatus values: ✅ Applied, ⚠️ Gap, ⚪ Verify (attestation-only, cannot be confirmed via AWS API).\n\nInclude at least these categories — flag any not surfaced by the assessment as ⚪ Verify:\n\n- Two DX locations minimum\n- Two connections per location on separate AWS logical devices\n- BFD enabled on customer router\n- Site-to-Site VPN backup\n- Match DX region to resource region\n- Continuous monitoring of VIF BGP + connection state\n- Regular failover testing\n- Use of Direct Connect Gateway\n- BGP advertisement limits (100 private / 1000 public)\n- Fail-over runbook documented\n\nGroup rows by status (Gaps first, then Verify, then Applied). Do NOT include follow-up questions or suggestions."
+        },
+        {
+            "id": "cost_to_reach_target",
+            "title": "Cost to Reach Target Tier",
+            "prompt": "You are writing Section 6 (Cost to Reach Target Tier) of the Direct Connect Resilience Review.\n\nFor every DX Gateway that is NOT already at Maximum tier, call `estimate_upgrade_cost` with the gateway's current target (use `assess_dx_resiliency.perDxGateway[].targetLevel`). Render a table:\n\n| DX Gateway | Current Tier | Target Tier | Est. Monthly Delta (USD) | Assumptions |\n\nUnder the table, add a total monthly delta summing across gateways, and a short disclaimer: \"Rough budgeting estimate only. Excludes data transfer, cross-connect fees, and partner pricing nuances. Confirm with `get_dx_pricing` for exact rates.\"\n\nIf every gateway is at Maximum, output: \"All DX Gateways already meet the Maximum Resiliency tier — no upgrade cost.\"\n\nDo NOT include follow-up questions or suggestions."
+        }
+    ],
+    "dependencies": {
+        "per_dxgw_assessment": "executive_summary",
+        "critical_findings": "executive_summary",
+        "recommended_infrastructure": "per_dxgw_assessment",
+        "best_practices_checklist": "executive_summary",
+        "cost_to_reach_target": "per_dxgw_assessment"
+    }
+}

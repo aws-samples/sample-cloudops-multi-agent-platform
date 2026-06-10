@@ -1,0 +1,1156 @@
+{
+  "homeAccountId": "123456789012",
+  "bgpPrefixMetrics": {
+    "dxvif-001": {
+      "accepted": 87,
+      "advertised": 24
+    },
+    "dxvif-002": {
+      "accepted": 85,
+      "advertised": 24
+    },
+    "dxvif-003": {
+      "accepted": 91,
+      "advertised": 24
+    },
+    "dxvif-004": {
+      "accepted": 89,
+      "advertised": 24
+    }
+  },
+  "locations": [
+    {
+      "locationCode": "EqSG2",
+      "locationName": "Equinix SG2 (Singapore)",
+      "region": "ap-southeast-1",
+      "availablePortSpeeds": [
+        "1Gbps",
+        "10Gbps"
+      ]
+    },
+    {
+      "locationCode": "EqSG3",
+      "locationName": "Global Switch SG (Singapore)",
+      "region": "ap-southeast-1",
+      "availablePortSpeeds": [
+        "1Gbps",
+        "10Gbps"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "connectionId": "dxcon-abc001",
+      "connectionName": "DX-SG2-Primary",
+      "connectionState": "available",
+      "location": "EqSG2",
+      "bandwidth": "10Gbps",
+      "region": "ap-southeast-1",
+      "hasBfd": true,
+      "awsDeviceV2": "EqSG2-1a2b3c4d",
+      "awsLogicalDeviceId": "EqSG2-lg1a"
+    },
+    {
+      "connectionId": "dxcon-abc002",
+      "connectionName": "DX-SG2-Secondary",
+      "connectionState": "available",
+      "location": "EqSG2",
+      "bandwidth": "10Gbps",
+      "region": "ap-southeast-1",
+      "hasBfd": true,
+      "awsDeviceV2": "EqSG2-5e6f7g8h",
+      "awsLogicalDeviceId": "EqSG2-lg1b"
+    },
+    {
+      "connectionId": "dxcon-abc003",
+      "connectionName": "DX-SG3-Primary",
+      "connectionState": "available",
+      "location": "EqSG3",
+      "bandwidth": "10Gbps",
+      "region": "ap-southeast-1",
+      "hasBfd": false,
+      "awsDeviceV2": "EqSG3-9i0j1k2l",
+      "awsLogicalDeviceId": "EqSG3-lg2a"
+    },
+    {
+      "connectionId": "dxcon-abc004",
+      "connectionName": "DX-SG3-Secondary",
+      "connectionState": "available",
+      "location": "EqSG3",
+      "bandwidth": "10Gbps",
+      "region": "ap-southeast-1",
+      "hasBfd": false,
+      "awsDeviceV2": "EqSG3-3m4n5o6p",
+      "awsLogicalDeviceId": "EqSG3-lg2b"
+    }
+  ],
+  "virtualInterfaces": [
+    {
+      "virtualInterfaceId": "dxvif-001",
+      "virtualInterfaceName": "Transit-VIF-SG2-1",
+      "virtualInterfaceType": "transit",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-abc001",
+      "directConnectGatewayId": "dxgw-001",
+      "vlan": 100,
+      "asn": 65000,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-001",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 65000,
+          "customerAddress": "169.254.0.2/30",
+          "amazonAddress": "169.254.0.1/30"
+        }
+      ],
+      "region": "ap-southeast-1",
+      "awsDeviceV2": "EqSG2-1a2b3c4d",
+      "awsLogicalDeviceId": "EqSG2-lg1a"
+    },
+    {
+      "virtualInterfaceId": "dxvif-002",
+      "virtualInterfaceName": "Transit-VIF-SG2-2",
+      "virtualInterfaceType": "transit",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-abc002",
+      "directConnectGatewayId": "dxgw-001",
+      "vlan": 200,
+      "asn": 65000,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-002",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 65000,
+          "customerAddress": "169.254.1.2/30",
+          "amazonAddress": "169.254.1.1/30"
+        }
+      ],
+      "region": "ap-southeast-1",
+      "awsDeviceV2": "EqSG2-5e6f7g8h",
+      "awsLogicalDeviceId": "EqSG2-lg1b"
+    },
+    {
+      "virtualInterfaceId": "dxvif-003",
+      "virtualInterfaceName": "Transit-VIF-SG3-1",
+      "virtualInterfaceType": "transit",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-abc003",
+      "directConnectGatewayId": "dxgw-001",
+      "vlan": 300,
+      "asn": 65001,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-003",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 65001,
+          "customerAddress": "169.254.2.2/30",
+          "amazonAddress": "169.254.2.1/30"
+        }
+      ],
+      "region": "ap-southeast-1",
+      "awsDeviceV2": "EqSG3-9i0j1k2l",
+      "awsLogicalDeviceId": "EqSG3-lg2a"
+    },
+    {
+      "virtualInterfaceId": "dxvif-004",
+      "virtualInterfaceName": "Transit-VIF-SG3-2",
+      "virtualInterfaceType": "transit",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-abc004",
+      "directConnectGatewayId": "dxgw-001",
+      "vlan": 400,
+      "asn": 65001,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-004",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 65001,
+          "customerAddress": "169.254.3.2/30",
+          "amazonAddress": "169.254.3.1/30"
+        }
+      ],
+      "region": "ap-southeast-1",
+      "awsDeviceV2": "EqSG3-3m4n5o6p",
+      "awsLogicalDeviceId": "EqSG3-lg2b"
+    }
+  ],
+  "dxGateways": [
+    {
+      "directConnectGatewayId": "dxgw-001",
+      "directConnectGatewayName": "Production-DX-Gateway",
+      "amazonSideAsn": 64512,
+      "directConnectGatewayState": "available"
+    },
+    {
+      "directConnectGatewayId": "dxgw-002",
+      "directConnectGatewayName": "Non-Prod-DX-Gateway",
+      "amazonSideAsn": 64520,
+      "directConnectGatewayState": "available"
+    }
+  ],
+  "dxGatewayAssociations": [
+    {
+      "directConnectGatewayId": "dxgw-001",
+      "associatedGateway": {
+        "id": "tgw-001",
+        "type": "transitGateway",
+        "region": "ap-southeast-1",
+        "ownerAccount": "123456789012"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.0.0.0/16",
+        "10.1.0.0/16"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-001",
+      "associatedGateway": {
+        "id": "tgw-002",
+        "type": "transitGateway",
+        "region": "ap-southeast-1",
+        "ownerAccount": "123456789012"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.2.0.0/16",
+        "10.3.0.0/16"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-001",
+      "associatedGateway": {
+        "id": "tgw-003",
+        "type": "transitGateway",
+        "region": "ap-southeast-1",
+        "ownerAccount": "123456789012"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.4.0.0/16",
+        "10.5.0.0/16"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-001",
+      "associatedGateway": {
+        "id": "tgw-004",
+        "type": "transitGateway",
+        "region": "ap-southeast-1",
+        "ownerAccount": "123456789012"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.6.0.0/16",
+        "10.7.0.0/16"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-002",
+      "associatedGateway": {
+        "id": "tgw-005",
+        "type": "transitGateway",
+        "region": "ap-southeast-1",
+        "ownerAccount": "123456789012"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.8.0.0/16",
+        "10.9.0.0/16"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-002",
+      "associatedGateway": {
+        "id": "tgw-006",
+        "type": "transitGateway",
+        "region": "ap-southeast-1",
+        "ownerAccount": "123456789012"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.10.0.0/16",
+        "10.11.0.0/16"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-002",
+      "associatedGateway": {
+        "id": "tgw-007",
+        "type": "transitGateway",
+        "region": "ap-southeast-1",
+        "ownerAccount": "123456789012"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.12.0.0/16",
+        "10.13.0.0/16"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-002",
+      "associatedGateway": {
+        "id": "tgw-008",
+        "type": "transitGateway",
+        "region": "ap-southeast-1",
+        "ownerAccount": "123456789012"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.14.0.0/16",
+        "10.15.0.0/16"
+      ]
+    }
+  ],
+  "lags": [],
+  "vpcs": [
+    {
+      "vpcId": "vpc-001",
+      "cidrBlock": "10.0.0.0/16",
+      "tags": {
+        "Name": "Production-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-002",
+      "cidrBlock": "10.1.0.0/16",
+      "tags": {
+        "Name": "Staging-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-003",
+      "cidrBlock": "10.2.0.0/16",
+      "tags": {
+        "Name": "Dev-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-004",
+      "cidrBlock": "10.3.0.0/16",
+      "tags": {
+        "Name": "Shared-Services-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-005",
+      "cidrBlock": "10.4.0.0/16",
+      "tags": {
+        "Name": "Data-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-006",
+      "cidrBlock": "10.5.0.0/16",
+      "tags": {
+        "Name": "Analytics-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-007",
+      "cidrBlock": "10.6.0.0/16",
+      "tags": {
+        "Name": "Security-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-008",
+      "cidrBlock": "10.7.0.0/16",
+      "tags": {
+        "Name": "Management-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-009",
+      "cidrBlock": "10.8.0.0/16",
+      "tags": {
+        "Name": "Monitoring-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-010",
+      "cidrBlock": "10.9.0.0/16",
+      "tags": {
+        "Name": "Logging-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-011",
+      "cidrBlock": "10.10.0.0/16",
+      "tags": {
+        "Name": "CI-CD-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-012",
+      "cidrBlock": "10.11.0.0/16",
+      "tags": {
+        "Name": "Testing-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-013",
+      "cidrBlock": "10.12.0.0/16",
+      "tags": {
+        "Name": "DR-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-014",
+      "cidrBlock": "10.13.0.0/16",
+      "tags": {
+        "Name": "Backup-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-015",
+      "cidrBlock": "10.14.0.0/16",
+      "tags": {
+        "Name": "Compliance-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-016",
+      "cidrBlock": "10.15.0.0/16",
+      "tags": {
+        "Name": "Audit-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    }
+  ],
+  "vpnGateways": [],
+  "vpnConnections": [],
+  "customerGateways": [],
+  "transitGateways": [
+    {
+      "transitGatewayId": "tgw-001",
+      "transitGatewayArn": "arn:aws:ec2:ap-southeast-1:123456789012:transit-gateway/tgw-001",
+      "state": "available",
+      "ownerId": "123456789012",
+      "description": "Production Transit Gateway",
+      "amazonSideAsn": 64512,
+      "tags": {
+        "Name": "Prod-TGW"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-002",
+      "transitGatewayArn": "arn:aws:ec2:ap-southeast-1:123456789012:transit-gateway/tgw-002",
+      "state": "available",
+      "ownerId": "123456789012",
+      "description": "Development Transit Gateway",
+      "amazonSideAsn": 64513,
+      "tags": {
+        "Name": "Dev-TGW"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-003",
+      "transitGatewayArn": "arn:aws:ec2:ap-southeast-1:123456789012:transit-gateway/tgw-003",
+      "state": "available",
+      "ownerId": "123456789012",
+      "description": "Data Platform Transit Gateway",
+      "amazonSideAsn": 64514,
+      "tags": {
+        "Name": "Data-TGW"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-004",
+      "transitGatewayArn": "arn:aws:ec2:ap-southeast-1:123456789012:transit-gateway/tgw-004",
+      "state": "available",
+      "ownerId": "123456789012",
+      "description": "Security Transit Gateway",
+      "amazonSideAsn": 64515,
+      "tags": {
+        "Name": "Security-TGW"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-005",
+      "transitGatewayArn": "arn:aws:ec2:ap-southeast-1:123456789012:transit-gateway/tgw-005",
+      "state": "available",
+      "ownerId": "123456789012",
+      "description": "Monitoring Transit Gateway",
+      "amazonSideAsn": 64516,
+      "tags": {
+        "Name": "Monitoring-TGW"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-006",
+      "transitGatewayArn": "arn:aws:ec2:ap-southeast-1:123456789012:transit-gateway/tgw-006",
+      "state": "available",
+      "ownerId": "123456789012",
+      "description": "CI/CD Transit Gateway",
+      "amazonSideAsn": 64517,
+      "tags": {
+        "Name": "CI-CD-TGW"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-007",
+      "transitGatewayArn": "arn:aws:ec2:ap-southeast-1:123456789012:transit-gateway/tgw-007",
+      "state": "available",
+      "ownerId": "123456789012",
+      "description": "DR Transit Gateway",
+      "amazonSideAsn": 64518,
+      "tags": {
+        "Name": "DR-TGW"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-008",
+      "transitGatewayArn": "arn:aws:ec2:ap-southeast-1:123456789012:transit-gateway/tgw-008",
+      "state": "available",
+      "ownerId": "123456789012",
+      "description": "Compliance Transit Gateway",
+      "amazonSideAsn": 64519,
+      "tags": {
+        "Name": "Compliance-TGW"
+      }
+    }
+  ],
+  "transitGatewayAttachments": [
+    {
+      "transitGatewayAttachmentId": "tgw-attach-001",
+      "transitGatewayId": "tgw-001",
+      "resourceType": "vpc",
+      "resourceId": "vpc-001",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-002",
+      "transitGatewayId": "tgw-001",
+      "resourceType": "vpc",
+      "resourceId": "vpc-002",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-003",
+      "transitGatewayId": "tgw-002",
+      "resourceType": "vpc",
+      "resourceId": "vpc-003",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-004",
+      "transitGatewayId": "tgw-002",
+      "resourceType": "vpc",
+      "resourceId": "vpc-004",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-005",
+      "transitGatewayId": "tgw-003",
+      "resourceType": "vpc",
+      "resourceId": "vpc-005",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-006",
+      "transitGatewayId": "tgw-003",
+      "resourceType": "vpc",
+      "resourceId": "vpc-006",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-007",
+      "transitGatewayId": "tgw-004",
+      "resourceType": "vpc",
+      "resourceId": "vpc-007",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-008",
+      "transitGatewayId": "tgw-004",
+      "resourceType": "vpc",
+      "resourceId": "vpc-008",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-009",
+      "transitGatewayId": "tgw-005",
+      "resourceType": "vpc",
+      "resourceId": "vpc-009",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-010",
+      "transitGatewayId": "tgw-005",
+      "resourceType": "vpc",
+      "resourceId": "vpc-010",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-011",
+      "transitGatewayId": "tgw-006",
+      "resourceType": "vpc",
+      "resourceId": "vpc-011",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-012",
+      "transitGatewayId": "tgw-006",
+      "resourceType": "vpc",
+      "resourceId": "vpc-012",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-013",
+      "transitGatewayId": "tgw-007",
+      "resourceType": "vpc",
+      "resourceId": "vpc-013",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-014",
+      "transitGatewayId": "tgw-007",
+      "resourceType": "vpc",
+      "resourceId": "vpc-014",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-015",
+      "transitGatewayId": "tgw-008",
+      "resourceType": "vpc",
+      "resourceId": "vpc-015",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-016",
+      "transitGatewayId": "tgw-008",
+      "resourceType": "vpc",
+      "resourceId": "vpc-016",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-dx1",
+      "transitGatewayId": "tgw-001",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-001",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-dx2",
+      "transitGatewayId": "tgw-002",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-001",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-dx3",
+      "transitGatewayId": "tgw-003",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-001",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-dx4",
+      "transitGatewayId": "tgw-004",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-001",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-dx5",
+      "transitGatewayId": "tgw-005",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-002",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-dx6",
+      "transitGatewayId": "tgw-006",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-002",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-dx7",
+      "transitGatewayId": "tgw-007",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-002",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-dx8",
+      "transitGatewayId": "tgw-008",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-002",
+      "resourceOwnerId": "",
+      "state": "available"
+    }
+  ],
+  "transitGatewayPeeringAttachments": [],
+  "vpcPeerings": [],
+  "tgwRouteTables": {
+    "tgw-001": [
+      {
+        "routeTable": {
+          "transitGatewayRouteTableId": "tgw-rtb-gw-001",
+          "transitGatewayId": "tgw-001",
+          "state": "available",
+          "defaultAssociationRouteTable": true,
+          "defaultPropagationRouteTable": true,
+          "tags": {
+            "Name": "tgw-001-default-rtb"
+          }
+        },
+        "routes": [
+          {
+            "destinationCidrBlock": "10.0.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-001",
+                "resourceType": "vpc",
+                "resourceId": "vpc-0"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.1.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-002",
+                "resourceType": "vpc",
+                "resourceId": "vpc-1"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "transitGatewayAttachments": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      }
+    ],
+    "tgw-002": [
+      {
+        "routeTable": {
+          "transitGatewayRouteTableId": "tgw-rtb-gw-002",
+          "transitGatewayId": "tgw-002",
+          "state": "available",
+          "defaultAssociationRouteTable": true,
+          "defaultPropagationRouteTable": true,
+          "tags": {
+            "Name": "tgw-002-default-rtb"
+          }
+        },
+        "routes": [
+          {
+            "destinationCidrBlock": "10.2.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-003",
+                "resourceType": "vpc",
+                "resourceId": "vpc-0"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.3.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-004",
+                "resourceType": "vpc",
+                "resourceId": "vpc-1"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "transitGatewayAttachments": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      }
+    ],
+    "tgw-003": [
+      {
+        "routeTable": {
+          "transitGatewayRouteTableId": "tgw-rtb-gw-003",
+          "transitGatewayId": "tgw-003",
+          "state": "available",
+          "defaultAssociationRouteTable": true,
+          "defaultPropagationRouteTable": true,
+          "tags": {
+            "Name": "tgw-003-default-rtb"
+          }
+        },
+        "routes": [
+          {
+            "destinationCidrBlock": "10.4.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-005",
+                "resourceType": "vpc",
+                "resourceId": "vpc-0"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.5.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-006",
+                "resourceType": "vpc",
+                "resourceId": "vpc-1"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "transitGatewayAttachments": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      }
+    ],
+    "tgw-004": [
+      {
+        "routeTable": {
+          "transitGatewayRouteTableId": "tgw-rtb-gw-004",
+          "transitGatewayId": "tgw-004",
+          "state": "available",
+          "defaultAssociationRouteTable": true,
+          "defaultPropagationRouteTable": true,
+          "tags": {
+            "Name": "tgw-004-default-rtb"
+          }
+        },
+        "routes": [
+          {
+            "destinationCidrBlock": "10.6.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-007",
+                "resourceType": "vpc",
+                "resourceId": "vpc-0"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.7.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-008",
+                "resourceType": "vpc",
+                "resourceId": "vpc-1"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "transitGatewayAttachments": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      }
+    ],
+    "tgw-005": [
+      {
+        "routeTable": {
+          "transitGatewayRouteTableId": "tgw-rtb-gw-005",
+          "transitGatewayId": "tgw-005",
+          "state": "available",
+          "defaultAssociationRouteTable": true,
+          "defaultPropagationRouteTable": true,
+          "tags": {
+            "Name": "tgw-005-default-rtb"
+          }
+        },
+        "routes": [
+          {
+            "destinationCidrBlock": "10.8.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-009",
+                "resourceType": "vpc",
+                "resourceId": "vpc-0"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.9.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-010",
+                "resourceType": "vpc",
+                "resourceId": "vpc-1"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "transitGatewayAttachments": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      }
+    ],
+    "tgw-006": [
+      {
+        "routeTable": {
+          "transitGatewayRouteTableId": "tgw-rtb-gw-006",
+          "transitGatewayId": "tgw-006",
+          "state": "available",
+          "defaultAssociationRouteTable": true,
+          "defaultPropagationRouteTable": true,
+          "tags": {
+            "Name": "tgw-006-default-rtb"
+          }
+        },
+        "routes": [
+          {
+            "destinationCidrBlock": "10.10.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-011",
+                "resourceType": "vpc",
+                "resourceId": "vpc-0"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.11.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-012",
+                "resourceType": "vpc",
+                "resourceId": "vpc-1"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "transitGatewayAttachments": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      }
+    ],
+    "tgw-007": [
+      {
+        "routeTable": {
+          "transitGatewayRouteTableId": "tgw-rtb-gw-007",
+          "transitGatewayId": "tgw-007",
+          "state": "available",
+          "defaultAssociationRouteTable": true,
+          "defaultPropagationRouteTable": true,
+          "tags": {
+            "Name": "tgw-007-default-rtb"
+          }
+        },
+        "routes": [
+          {
+            "destinationCidrBlock": "10.12.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-013",
+                "resourceType": "vpc",
+                "resourceId": "vpc-0"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.13.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-014",
+                "resourceType": "vpc",
+                "resourceId": "vpc-1"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "transitGatewayAttachments": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      }
+    ],
+    "tgw-008": [
+      {
+        "routeTable": {
+          "transitGatewayRouteTableId": "tgw-rtb-gw-008",
+          "transitGatewayId": "tgw-008",
+          "state": "available",
+          "defaultAssociationRouteTable": true,
+          "defaultPropagationRouteTable": true,
+          "tags": {
+            "Name": "tgw-008-default-rtb"
+          }
+        },
+        "routes": [
+          {
+            "destinationCidrBlock": "10.14.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-015",
+                "resourceType": "vpc",
+                "resourceId": "vpc-0"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.15.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-016",
+                "resourceType": "vpc",
+                "resourceId": "vpc-1"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "transitGatewayAttachments": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      }
+    ]
+  },
+  "cloudWanCoreNetworks": [],
+  "cloudWanAttachments": [],
+  "cloudWanPeerings": [],
+  "cloudWanRoutes": {},
+  "connectionUtilization": {
+    "dxcon-abc001": {
+      "ingressBpsPeak": 5400000000,
+      "egressBpsPeak": 6300000000
+    },
+    "dxcon-abc002": {
+      "ingressBpsPeak": 5500000000,
+      "egressBpsPeak": 3500000000
+    },
+    "dxcon-abc003": {
+      "ingressBpsPeak": 5600000000,
+      "egressBpsPeak": 4200000000
+    },
+    "dxcon-abc004": {
+      "ingressBpsPeak": 5700000000,
+      "egressBpsPeak": 4900000000
+    }
+  },
+  "vifUtilization": {
+    "dxvif-001": {
+      "ingressBpsPeak": 5525000000,
+      "egressBpsPeak": 2975000000
+    },
+    "dxvif-002": {
+      "ingressBpsPeak": 5610000000,
+      "egressBpsPeak": 3570000000
+    },
+    "dxvif-003": {
+      "ingressBpsPeak": 5695000000,
+      "egressBpsPeak": 4165000000
+    },
+    "dxvif-004": {
+      "ingressBpsPeak": 5780000000,
+      "egressBpsPeak": 4760000000
+    }
+  },
+  "utilizationWindowDays": 30
+}

@@ -1,0 +1,12 @@
+.venv/
+.git/
+.kiro/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+terraform/
+tests/
+docs/
+*.zip
+.env
+.lambda-hashes/

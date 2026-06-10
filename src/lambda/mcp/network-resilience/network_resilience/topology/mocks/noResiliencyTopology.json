@@ -1,0 +1,200 @@
+{
+  "homeAccountId": "123456789012",
+  "bgpPrefixMetrics": {
+    "dxvif-001": {
+      "accepted": 12,
+      "advertised": 5
+    }
+  },
+  "locations": [
+    {
+      "locationCode": "DxDXB1",
+      "locationName": "AWS Direct Connect Dubai",
+      "region": "me-south-1",
+      "availablePortSpeeds": [
+        "1Gbps",
+        "10Gbps"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "connectionId": "dxcon-abc001",
+      "connectionName": "DX-Connection-Dubai",
+      "connectionState": "available",
+      "location": "DxDXB1",
+      "bandwidth": "1Gbps",
+      "region": "me-south-1",
+      "hasBfd": false,
+      "awsDeviceV2": "DxDXB1-1a2b3c4d",
+      "awsLogicalDeviceId": "DxDXB1-lg1a"
+    }
+  ],
+  "virtualInterfaces": [
+    {
+      "virtualInterfaceId": "dxvif-001",
+      "virtualInterfaceName": "Private-VIF-1",
+      "virtualInterfaceType": "private",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-abc001",
+      "directConnectGatewayId": "dxgw-001",
+      "vlan": 100,
+      "asn": 65000,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-001",
+          "bgpPeerState": "available",
+          "bgpStatus": "down",
+          "asn": 65000,
+          "customerAddress": "169.254.0.2/30",
+          "amazonAddress": "169.254.0.1/30"
+        }
+      ],
+      "region": "me-south-1",
+      "awsDeviceV2": "DxDXB1-1a2b3c4d",
+      "awsLogicalDeviceId": "DxDXB1-lg1a"
+    }
+  ],
+  "dxGateways": [
+    {
+      "directConnectGatewayId": "dxgw-001",
+      "directConnectGatewayName": "DX-Gateway-Dubai-to-SG",
+      "amazonSideAsn": 64512,
+      "directConnectGatewayState": "available"
+    },
+    {
+      "directConnectGatewayId": "dxgw-unused01",
+      "directConnectGatewayName": "dxgw-legacy-unused",
+      "amazonSideAsn": 64599,
+      "directConnectGatewayState": "available"
+    }
+  ],
+  "dxGatewayAssociations": [
+    {
+      "directConnectGatewayId": "dxgw-001",
+      "associatedGateway": {
+        "id": "vgw-001",
+        "type": "virtualPrivateGateway",
+        "region": "ap-southeast-1",
+        "ownerAccount": "123456789012"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.0.0.0/8",
+        "172.16.0.0/12"
+      ]
+    }
+  ],
+  "lags": [],
+  "vpcs": [
+    {
+      "vpcId": "vpc-001",
+      "cidrBlock": "10.0.0.0/16",
+      "tags": {
+        "Name": "Production-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-002",
+      "cidrBlock": "10.1.0.0/16",
+      "tags": {
+        "Name": "Staging-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    }
+  ],
+  "vpnGateways": [
+    {
+      "vpnGatewayId": "vgw-001",
+      "vpcAttachments": [
+        {
+          "vpcId": "vpc-001",
+          "state": "attached"
+        }
+      ],
+      "type": "ipsec.1",
+      "amazonSideAsn": 64512,
+      "state": "available",
+      "tags": {
+        "Name": "vgw-basic-prod"
+      }
+    },
+    {
+      "vpnGatewayId": "vgw-detached01",
+      "vpcAttachments": [],
+      "type": "ipsec.1",
+      "amazonSideAsn": 64512,
+      "state": "available",
+      "tags": {
+        "Name": "vgw-dx-bastion"
+      }
+    }
+  ],
+  "vpnConnections": [
+    {
+      "vpnConnectionId": "vpn-basic01",
+      "vpnGatewayId": "vgw-001",
+      "customerGatewayId": "cgw-basic01",
+      "state": "available",
+      "type": "ipsec.1",
+      "category": "VPN",
+      "customerGatewayAddress": "198.51.100.5",
+      "tunnels": [
+        {
+          "outsideIpAddress": "54.239.10.1",
+          "status": "UP",
+          "acceptedRouteCount": 3,
+          "dpdTimeoutSeconds": 30,
+          "dpdTimeoutAction": "none"
+        },
+        {
+          "outsideIpAddress": "54.239.10.2",
+          "status": "DOWN",
+          "statusMessage": "IPSEC IS DOWN",
+          "dpdTimeoutSeconds": 30,
+          "dpdTimeoutAction": "clear"
+        }
+      ],
+      "tags": {
+        "Name": "VPN-Backup"
+      }
+    }
+  ],
+  "customerGateways": [
+    {
+      "customerGatewayId": "cgw-basic01",
+      "bgpAsn": "65000",
+      "ipAddress": "198.51.100.5",
+      "state": "available",
+      "type": "ipsec.1",
+      "tags": {
+        "Name": "OnPrem-VPN-Router"
+      }
+    }
+  ],
+  "transitGateways": [],
+  "transitGatewayAttachments": [],
+  "transitGatewayPeeringAttachments": [],
+  "vpcPeerings": [],
+  "tgwRouteTables": {},
+  "cloudWanCoreNetworks": [],
+  "cloudWanAttachments": [],
+  "cloudWanPeerings": [],
+  "cloudWanRoutes": {},
+  "connectionUtilization": {
+    "dxcon-abc001": {
+      "ingressBpsPeak": 540000000,
+      "egressBpsPeak": 630000000
+    }
+  },
+  "vifUtilization": {
+    "dxvif-001": {
+      "ingressBpsPeak": 552500000,
+      "egressBpsPeak": 297500000
+    }
+  },
+  "utilizationWindowDays": 30
+}

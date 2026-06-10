@@ -1,0 +1,13 @@
+# False-positive allowlist for gitleaks scans of git history.
+# Format: <commit-sha>:<file-path>:<rule-id>:<line-number>
+#
+# Historical test fixture in tests/unit/test_aws_utils.py used AWS's canonical
+# public documentation example access-key placeholder. Not a real credential.
+# The HEAD value has been replaced with TEST-FAKE-ACCESS-KEY; the original
+# only persists in old commits, so gitleaks still flags it on full-history
+# scans. The fingerprints below cover both the original commit and the
+# allowlist file itself.
+8db9cb02731002b1dfcd65f1387d41c864b3a4f1:tests/unit/test_aws_utils.py:aws-access-token:62
+883a1df92bc4164542b26324ec7992b2f1d1d06d:.gitleaksignore:aws-access-token:4
+d0a5d35d2fc2b2c15d404ae742f9a49749ed6466:tests/unit/test_redact.py:aws-access-token:23
+819f90b74b03d643ccd2f4dde86751ddb9b866cc:terraform/main.tf:generic-api-key:119

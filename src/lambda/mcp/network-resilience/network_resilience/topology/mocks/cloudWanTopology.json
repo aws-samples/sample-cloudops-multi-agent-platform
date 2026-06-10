@@ -1,0 +1,1748 @@
+{
+  "homeAccountId": "111111111111",
+  "bgpPrefixMetrics": {
+    "dxvif-cw001": {
+      "accepted": 18,
+      "advertised": 7
+    },
+    "dxvif-cw002": {
+      "accepted": 18,
+      "advertised": 7
+    },
+    "dxvif-cw003": {
+      "accepted": 24,
+      "advertised": 9
+    },
+    "dxvif-cw004": {
+      "accepted": 24,
+      "advertised": 9
+    },
+    "dxvif-cw005": {
+      "accepted": 42,
+      "advertised": 12
+    },
+    "dxvif-cw006": {
+      "accepted": 31,
+      "advertised": 10
+    }
+  },
+  "locations": [
+    {
+      "locationCode": "EqTY2",
+      "locationName": "Direct Connect Location EqTY2",
+      "region": "ap-northeast-1",
+      "availablePortSpeeds": [
+        "1Gbps",
+        "10Gbps"
+      ]
+    },
+    {
+      "locationCode": "ATTC1",
+      "locationName": "Direct Connect Location ATTC1",
+      "region": "ap-northeast-1",
+      "availablePortSpeeds": [
+        "1Gbps",
+        "10Gbps"
+      ]
+    },
+    {
+      "locationCode": "KDOS2",
+      "locationName": "Direct Connect Location KDOS2",
+      "region": "ap-northeast-3",
+      "availablePortSpeeds": [
+        "1Gbps",
+        "10Gbps"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "connectionId": "dxcon-fghzsvh1",
+      "connectionName": "corp-global-lab-test-ty2-vlan3000",
+      "connectionState": "available",
+      "location": "EqTY2",
+      "bandwidth": "50Mbps",
+      "region": "ap-northeast-1",
+      "hasBfd": false,
+      "awsDeviceV2": "EqTY2-devA",
+      "awsLogicalDeviceId": "EqTY2-lgA",
+      "partnerName": "AWS Japan DXLab4ALL"
+    },
+    {
+      "connectionId": "dxcon-fghqjw4y",
+      "connectionName": "corp-global-lab-test-ty2-vlan3001",
+      "connectionState": "available",
+      "location": "EqTY2",
+      "bandwidth": "50Mbps",
+      "region": "ap-northeast-1",
+      "hasBfd": false,
+      "awsDeviceV2": "EqTY2-devA",
+      "awsLogicalDeviceId": "EqTY2-lgA",
+      "partnerName": "AWS Japan DXLab4ALL"
+    },
+    {
+      "connectionId": "dxcon-fghjopl1",
+      "connectionName": "corp-global-lab-test-cc1-vlan1001",
+      "connectionState": "available",
+      "location": "ATTC1",
+      "bandwidth": "50Mbps",
+      "region": "ap-northeast-1",
+      "hasBfd": false,
+      "awsDeviceV2": "ATTC1-devA",
+      "awsLogicalDeviceId": "ATTC1-lgA",
+      "partnerName": "AWS Japan DXLab4ALL"
+    },
+    {
+      "connectionId": "dxcon-ffxokvu2",
+      "connectionName": "corp-global-lab-test-cc1-vlan1200",
+      "connectionState": "available",
+      "location": "ATTC1",
+      "bandwidth": "50Mbps",
+      "region": "ap-northeast-1",
+      "hasBfd": false,
+      "awsDeviceV2": "ATTC1-devA",
+      "awsLogicalDeviceId": "ATTC1-lgA",
+      "partnerName": "AWS Japan DXLab4ALL"
+    },
+    {
+      "connectionId": "dxcon-fgdbtvz3",
+      "connectionName": "corp-20240115-host-com-cc1",
+      "connectionState": "available",
+      "location": "ATTC1",
+      "bandwidth": "50Mbps",
+      "region": "ap-northeast-1",
+      "hasBfd": false,
+      "awsDeviceV2": "ATTC1-devA",
+      "awsLogicalDeviceId": "ATTC1-lgA",
+      "partnerName": "AWS Japan DXLab4ALL"
+    },
+    {
+      "connectionId": "dxcon-fgabvk25",
+      "connectionName": "corp-20240115-host-com-telehouse-osaka2",
+      "connectionState": "available",
+      "location": "KDOS2",
+      "bandwidth": "50Mbps",
+      "region": "ap-northeast-3",
+      "hasBfd": false,
+      "awsDeviceV2": "KDOS2-devA",
+      "awsLogicalDeviceId": "KDOS2-lgA",
+      "partnerName": "AWS Japan DXLab4"
+    }
+  ],
+  "virtualInterfaces": [
+    {
+      "virtualInterfaceId": "dxvif-cw001",
+      "virtualInterfaceName": "Private-VIF-3000",
+      "virtualInterfaceType": "private",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-fghzsvh1",
+      "directConnectGatewayId": "dxgw-0001",
+      "vlan": 3000,
+      "asn": 64520,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-cw001",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 64520,
+          "customerAddress": "169.254.10.2/30",
+          "amazonAddress": "169.254.10.1/30"
+        }
+      ],
+      "region": "ap-northeast-1",
+      "awsDeviceV2": "EqTY2-devA",
+      "awsLogicalDeviceId": "EqTY2-lgA"
+    },
+    {
+      "virtualInterfaceId": "dxvif-cw002",
+      "virtualInterfaceName": "Private-VIF-3001",
+      "virtualInterfaceType": "private",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-fghqjw4y",
+      "directConnectGatewayId": "dxgw-0001",
+      "vlan": 3001,
+      "asn": 64520,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-cw002",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 64520,
+          "customerAddress": "169.254.10.6/30",
+          "amazonAddress": "169.254.10.5/30"
+        }
+      ],
+      "region": "ap-northeast-1",
+      "awsDeviceV2": "EqTY2-devA",
+      "awsLogicalDeviceId": "EqTY2-lgA"
+    },
+    {
+      "virtualInterfaceId": "dxvif-cw003",
+      "virtualInterfaceName": "Private-VIF-1001",
+      "virtualInterfaceType": "private",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-fghjopl1",
+      "directConnectGatewayId": "dxgw-0002",
+      "vlan": 1001,
+      "asn": 65002,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-cw003",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 65002,
+          "customerAddress": "169.254.20.2/30",
+          "amazonAddress": "169.254.20.1/30"
+        }
+      ],
+      "region": "ap-northeast-1",
+      "awsDeviceV2": "ATTC1-devA",
+      "awsLogicalDeviceId": "ATTC1-lgA"
+    },
+    {
+      "virtualInterfaceId": "dxvif-cw004",
+      "virtualInterfaceName": "Private-VIF-1200",
+      "virtualInterfaceType": "private",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-ffxokvu2",
+      "directConnectGatewayId": "dxgw-0002",
+      "vlan": 1200,
+      "asn": 65002,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-cw004",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 65002,
+          "customerAddress": "169.254.20.6/30",
+          "amazonAddress": "169.254.20.5/30"
+        }
+      ],
+      "region": "ap-northeast-1",
+      "awsDeviceV2": "ATTC1-devA",
+      "awsLogicalDeviceId": "ATTC1-lgA"
+    },
+    {
+      "virtualInterfaceId": "dxvif-cw005",
+      "virtualInterfaceName": "Transit-VIF-2010",
+      "virtualInterfaceType": "transit",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-fgdbtvz3",
+      "directConnectGatewayId": "dxgw-0003",
+      "vlan": 2010,
+      "asn": 64512,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-cw005",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 64512,
+          "customerAddress": "169.254.30.2/30",
+          "amazonAddress": "169.254.30.1/30"
+        }
+      ],
+      "region": "ap-northeast-1",
+      "awsDeviceV2": "ATTC1-devA",
+      "awsLogicalDeviceId": "ATTC1-lgA"
+    },
+    {
+      "virtualInterfaceId": "dxvif-cw006",
+      "virtualInterfaceName": "Transit-VIF-2010-OSK",
+      "virtualInterfaceType": "transit",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-fgabvk25",
+      "directConnectGatewayId": "dxgw-0004",
+      "vlan": 2010,
+      "asn": 64513,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-cw006",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 64513,
+          "customerAddress": "169.254.40.2/30",
+          "amazonAddress": "169.254.40.1/30"
+        }
+      ],
+      "region": "ap-northeast-3",
+      "awsDeviceV2": "KDOS2-devA",
+      "awsLogicalDeviceId": "KDOS2-lgA"
+    }
+  ],
+  "dxGateways": [
+    {
+      "directConnectGatewayId": "dxgw-0001",
+      "directConnectGatewayName": "dxgw-1",
+      "amazonSideAsn": 64520,
+      "directConnectGatewayState": "available"
+    },
+    {
+      "directConnectGatewayId": "dxgw-0002",
+      "directConnectGatewayName": "corp-Account-B-DXGW",
+      "amazonSideAsn": 65002,
+      "directConnectGatewayState": "available"
+    },
+    {
+      "directConnectGatewayId": "dxgw-0003",
+      "directConnectGatewayName": "corp-TGW-Connect-PoC-ASN64512",
+      "amazonSideAsn": 64512,
+      "directConnectGatewayState": "available"
+    },
+    {
+      "directConnectGatewayId": "dxgw-0004",
+      "directConnectGatewayName": "DXGW-Osaka",
+      "amazonSideAsn": 64513,
+      "directConnectGatewayState": "available"
+    }
+  ],
+  "dxGatewayAssociations": [
+    {
+      "directConnectGatewayId": "dxgw-0001",
+      "associatedGateway": {
+        "id": "vgw-0001",
+        "type": "virtualPrivateGateway",
+        "region": "ap-northeast-1",
+        "ownerAccount": "111111111111"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.0.0.0/16",
+        "10.1.0.0/16",
+        "2406:da14:0b42::/48"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-0002",
+      "associatedGateway": {
+        "id": "tgw-acctb01",
+        "type": "transitGateway",
+        "region": "ap-northeast-1",
+        "ownerAccount": "111111111111"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "100.64.0.0/16"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-0003",
+      "associatedGateway": {
+        "id": "tgw-tky-grp1",
+        "type": "transitGateway",
+        "region": "ap-northeast-1",
+        "ownerAccount": "111111111111"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.30.0.0/16"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-0003",
+      "associatedGateway": {
+        "id": "tgw-tky-grp2",
+        "type": "transitGateway",
+        "region": "ap-northeast-1",
+        "ownerAccount": "111111111111"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.31.0.0/16"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-0003",
+      "associatedGateway": {
+        "id": "tgw-tky-grp3",
+        "type": "transitGateway",
+        "region": "ap-northeast-1",
+        "ownerAccount": "111111111111"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.32.0.0/16"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-0003",
+      "associatedGateway": {
+        "id": "tgw-tky-grp4",
+        "type": "transitGateway",
+        "region": "ap-northeast-1",
+        "ownerAccount": "111111111111"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.33.0.0/16"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-0003",
+      "associatedGateway": {
+        "id": "tgw-tky-grp5",
+        "type": "transitGateway",
+        "region": "ap-northeast-1",
+        "ownerAccount": "111111111111"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.34.0.0/16"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-0003",
+      "associatedGateway": {
+        "id": "tgw-tky-grp6",
+        "type": "transitGateway",
+        "region": "ap-northeast-1",
+        "ownerAccount": "111111111111"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.35.0.0/16"
+      ]
+    }
+  ],
+  "lags": [],
+  "vpcs": [
+    {
+      "vpcId": "vpc-acctb01",
+      "cidrBlock": "100.64.0.0/16",
+      "tags": {
+        "Name": "corp-VPC-B"
+      },
+      "region": "ap-northeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-tky01",
+      "cidrBlock": "10.0.0.0/16",
+      "tags": {
+        "Name": "corp-VPC-1"
+      },
+      "region": "ap-northeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-tky02",
+      "cidrBlock": "10.11.0.0/20",
+      "tags": {
+        "Name": "VPC-TKY-1"
+      },
+      "region": "ap-northeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-tky03",
+      "cidrBlock": "10.12.0.0/20",
+      "tags": {
+        "Name": "VPC-TKY-2"
+      },
+      "region": "ap-northeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-tky04",
+      "cidrBlock": "10.13.0.0/20",
+      "tags": {
+        "Name": "VPC-TKY-3"
+      },
+      "region": "ap-northeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-tky-grp1",
+      "cidrBlock": "10.30.0.0/20",
+      "tags": {
+        "Name": "VPC-PoC-1"
+      },
+      "region": "ap-northeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-tky-grp2",
+      "cidrBlock": "10.31.0.0/20",
+      "tags": {
+        "Name": "VPC-PoC-2"
+      },
+      "region": "ap-northeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-tky-grp3",
+      "cidrBlock": "10.32.0.0/20",
+      "tags": {
+        "Name": "VPC-PoC-3"
+      },
+      "region": "ap-northeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-tky-grp4",
+      "cidrBlock": "10.33.0.0/20",
+      "tags": {
+        "Name": "VPC-PoC-4"
+      },
+      "region": "ap-northeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-tky-grp5",
+      "cidrBlock": "10.34.0.0/20",
+      "tags": {
+        "Name": "VPC-PoC-5"
+      },
+      "region": "ap-northeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-tky-grp6",
+      "cidrBlock": "10.35.0.0/20",
+      "tags": {
+        "Name": "VPC-PoC-6"
+      },
+      "region": "ap-northeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-tky-orph1",
+      "cidrBlock": "10.40.0.0/20",
+      "tags": {
+        "Name": "VPC-TKY-Isolated-1"
+      },
+      "region": "ap-northeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-tky-orph2",
+      "cidrBlock": "10.41.0.0/20",
+      "tags": {
+        "Name": "VPC-TKY-Isolated-2"
+      },
+      "region": "ap-northeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-tky-orph3",
+      "cidrBlock": "10.42.0.0/20",
+      "tags": {
+        "Name": "VPC-TKY-Isolated-3"
+      },
+      "region": "ap-northeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-osk01",
+      "cidrBlock": "10.21.0.0/20",
+      "tags": {
+        "Name": "VPC-OSK-1"
+      },
+      "region": "ap-northeast-3",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-osk02",
+      "cidrBlock": "10.22.0.0/20",
+      "tags": {
+        "Name": "VPC-OSK-2"
+      },
+      "region": "ap-northeast-3",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-osk03",
+      "cidrBlock": "10.23.0.0/20",
+      "tags": {
+        "Name": "VPC-OSK-3"
+      },
+      "region": "ap-northeast-3",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-usva01",
+      "cidrBlock": "10.50.0.0/16",
+      "tags": {
+        "Name": "VPC-USVA-1"
+      },
+      "region": "us-east-1",
+      "state": "available"
+    }
+  ],
+  "vpnGateways": [
+    {
+      "vpnGatewayId": "vgw-0001",
+      "vpcAttachments": [
+        {
+          "vpcId": "vpc-tky01",
+          "state": "attached"
+        }
+      ],
+      "type": "ipsec.1",
+      "amazonSideAsn": 64520,
+      "state": "available",
+      "tags": {
+        "Name": "vgw-tokyo-prod"
+      }
+    },
+    {
+      "vpnGatewayId": "vgw-usva01",
+      "vpcAttachments": [
+        {
+          "vpcId": "vpc-usva01",
+          "state": "attached"
+        }
+      ],
+      "type": "ipsec.1",
+      "amazonSideAsn": 64514,
+      "state": "available",
+      "tags": {}
+    }
+  ],
+  "vpnConnections": [
+    {
+      "vpnConnectionId": "vpn-aa000001",
+      "vpnGatewayId": "vgw-0001",
+      "customerGatewayId": "cgw-nuro01",
+      "state": "available",
+      "type": "ipsec.1",
+      "category": "VPN",
+      "customerGatewayAddress": "198.51.100.45",
+      "tunnels": [
+        {
+          "outsideIpAddress": "203.0.113.11",
+          "status": "UP",
+          "acceptedRouteCount": 4,
+          "dpdTimeoutSeconds": 30,
+          "dpdTimeoutAction": "restart"
+        },
+        {
+          "outsideIpAddress": "203.0.113.12",
+          "status": "UP",
+          "acceptedRouteCount": 4,
+          "dpdTimeoutSeconds": 30,
+          "dpdTimeoutAction": "restart"
+        }
+      ],
+      "tags": {
+        "Name": "corp-vpn-vgw01"
+      }
+    }
+  ],
+  "customerGateways": [
+    {
+      "customerGatewayId": "cgw-nuro01",
+      "bgpAsn": "65000",
+      "ipAddress": "198.51.100.45",
+      "state": "available",
+      "type": "ipsec.1",
+      "tags": {
+        "Name": "corp-vpn-nuro-cgw"
+      }
+    }
+  ],
+  "transitGateways": [
+    {
+      "transitGatewayId": "tgw-acctb01",
+      "transitGatewayArn": "arn:aws:ec2:ap-northeast-1:111111111111:transit-gateway/tgw-acctb01",
+      "state": "available",
+      "ownerId": "111111111111",
+      "description": "corp-Account-B-TGW",
+      "amazonSideAsn": 65002,
+      "tags": {
+        "Name": "corp-Account-B-TGW"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-tky-asn64512",
+      "transitGatewayArn": "arn:aws:ec2:ap-northeast-1:111111111111:transit-gateway/tgw-tky-asn64512",
+      "state": "available",
+      "ownerId": "111111111111",
+      "description": "TGW01-ASN64512",
+      "amazonSideAsn": 64512,
+      "tags": {
+        "Name": "TGW01-ASN64512"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-tky-1",
+      "transitGatewayArn": "arn:aws:ec2:ap-northeast-1:111111111111:transit-gateway/tgw-tky-1",
+      "state": "available",
+      "ownerId": "111111111111",
+      "description": "TGW-TKY-1",
+      "amazonSideAsn": 65111,
+      "tags": {
+        "Name": "TGW-TKY-1"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-tky-2",
+      "transitGatewayArn": "arn:aws:ec2:ap-northeast-1:111111111111:transit-gateway/tgw-tky-2",
+      "state": "available",
+      "ownerId": "111111111111",
+      "description": "TGW-TKY-2",
+      "amazonSideAsn": 65112,
+      "tags": {
+        "Name": "TGW-TKY-2"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-tky-grp1",
+      "transitGatewayArn": "arn:aws:ec2:ap-northeast-1:111111111111:transit-gateway/tgw-tky-grp1",
+      "state": "available",
+      "ownerId": "111111111111",
+      "description": "TGW-PoC-1",
+      "amazonSideAsn": 65131,
+      "tags": {
+        "Name": "TGW-PoC-1"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-tky-grp2",
+      "transitGatewayArn": "arn:aws:ec2:ap-northeast-1:111111111111:transit-gateway/tgw-tky-grp2",
+      "state": "available",
+      "ownerId": "111111111111",
+      "description": "TGW-PoC-2",
+      "amazonSideAsn": 65132,
+      "tags": {
+        "Name": "TGW-PoC-2"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-tky-grp3",
+      "transitGatewayArn": "arn:aws:ec2:ap-northeast-1:111111111111:transit-gateway/tgw-tky-grp3",
+      "state": "available",
+      "ownerId": "111111111111",
+      "description": "TGW-PoC-3",
+      "amazonSideAsn": 65133,
+      "tags": {
+        "Name": "TGW-PoC-3"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-tky-grp4",
+      "transitGatewayArn": "arn:aws:ec2:ap-northeast-1:111111111111:transit-gateway/tgw-tky-grp4",
+      "state": "available",
+      "ownerId": "111111111111",
+      "description": "TGW-PoC-4",
+      "amazonSideAsn": 65134,
+      "tags": {
+        "Name": "TGW-PoC-4"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-tky-grp5",
+      "transitGatewayArn": "arn:aws:ec2:ap-northeast-1:111111111111:transit-gateway/tgw-tky-grp5",
+      "state": "available",
+      "ownerId": "111111111111",
+      "description": "TGW-PoC-5",
+      "amazonSideAsn": 65135,
+      "tags": {
+        "Name": "TGW-PoC-5"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-tky-grp6",
+      "transitGatewayArn": "arn:aws:ec2:ap-northeast-1:111111111111:transit-gateway/tgw-tky-grp6",
+      "state": "available",
+      "ownerId": "111111111111",
+      "description": "TGW-PoC-6",
+      "amazonSideAsn": 65136,
+      "tags": {
+        "Name": "TGW-PoC-6"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-osk01",
+      "transitGatewayArn": "arn:aws:ec2:ap-northeast-3:111111111111:transit-gateway/tgw-osk01",
+      "state": "available",
+      "ownerId": "111111111111",
+      "description": "TGW-OSK-1",
+      "amazonSideAsn": 65121,
+      "tags": {
+        "Name": "TGW-OSK-1"
+      }
+    },
+    {
+      "transitGatewayId": "tgw-osk02",
+      "transitGatewayArn": "arn:aws:ec2:ap-northeast-3:111111111111:transit-gateway/tgw-osk02",
+      "state": "available",
+      "ownerId": "111111111111",
+      "description": "TGW-OSK-2",
+      "amazonSideAsn": 65122,
+      "tags": {
+        "Name": "TGW-OSK-2"
+      }
+    }
+  ],
+  "transitGatewayAttachments": [
+    {
+      "transitGatewayAttachmentId": "tgw-attach-b01",
+      "transitGatewayId": "tgw-acctb01",
+      "resourceType": "vpc",
+      "resourceId": "vpc-acctb01",
+      "resourceOwnerId": "111111111111",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-b-dx",
+      "transitGatewayId": "tgw-acctb01",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-0002",
+      "resourceOwnerId": "111111111111",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-tky-1",
+      "transitGatewayId": "tgw-tky-1",
+      "resourceType": "vpc",
+      "resourceId": "vpc-tky02",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-tky-2",
+      "transitGatewayId": "tgw-tky-2",
+      "resourceType": "vpc",
+      "resourceId": "vpc-tky03",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-tky-asn",
+      "transitGatewayId": "tgw-tky-asn64512",
+      "resourceType": "vpc",
+      "resourceId": "vpc-tky04",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-tky-grp1-dx",
+      "transitGatewayId": "tgw-tky-grp1",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-0003",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-tky-grp2-dx",
+      "transitGatewayId": "tgw-tky-grp2",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-0003",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-tky-grp3-dx",
+      "transitGatewayId": "tgw-tky-grp3",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-0003",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-tky-grp4-dx",
+      "transitGatewayId": "tgw-tky-grp4",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-0003",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-tky-grp5-dx",
+      "transitGatewayId": "tgw-tky-grp5",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-0003",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-tky-grp6-dx",
+      "transitGatewayId": "tgw-tky-grp6",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-0003",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-tky-grp1-vpc",
+      "transitGatewayId": "tgw-tky-grp1",
+      "resourceType": "vpc",
+      "resourceId": "vpc-tky-grp1",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-tky-grp2-vpc",
+      "transitGatewayId": "tgw-tky-grp2",
+      "resourceType": "vpc",
+      "resourceId": "vpc-tky-grp2",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-tky-grp3-vpc",
+      "transitGatewayId": "tgw-tky-grp3",
+      "resourceType": "vpc",
+      "resourceId": "vpc-tky-grp3",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-tky-grp4-vpc",
+      "transitGatewayId": "tgw-tky-grp4",
+      "resourceType": "vpc",
+      "resourceId": "vpc-tky-grp4",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-tky-grp5-vpc",
+      "transitGatewayId": "tgw-tky-grp5",
+      "resourceType": "vpc",
+      "resourceId": "vpc-tky-grp5",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-tky-grp6-vpc",
+      "transitGatewayId": "tgw-tky-grp6",
+      "resourceType": "vpc",
+      "resourceId": "vpc-tky-grp6",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-osk01a",
+      "transitGatewayId": "tgw-osk01",
+      "resourceType": "vpc",
+      "resourceId": "vpc-osk01",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-osk01b",
+      "transitGatewayId": "tgw-osk01",
+      "resourceType": "vpc",
+      "resourceId": "vpc-osk02",
+      "resourceOwnerId": "",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-osk02a",
+      "transitGatewayId": "tgw-osk02",
+      "resourceType": "vpc",
+      "resourceId": "vpc-osk03",
+      "resourceOwnerId": "",
+      "state": "available"
+    }
+  ],
+  "transitGatewayPeeringAttachments": [],
+  "vpcPeerings": [],
+  "tgwRouteTables": {
+    "tgw-acctb01": [
+      {
+        "routeTable": {
+          "transitGatewayRouteTableId": "tgw-rtb-cctb01",
+          "transitGatewayId": "tgw-acctb01",
+          "state": "available",
+          "defaultAssociationRouteTable": true,
+          "defaultPropagationRouteTable": true,
+          "tags": {
+            "Name": "tgw-acctb01-default-rtb"
+          }
+        },
+        "routes": [
+          {
+            "destinationCidrBlock": "100.64.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-b01",
+                "resourceType": "vpc",
+                "resourceId": "vpc-0"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "transitGatewayAttachments": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      }
+    ],
+    "tgw-tky-1": [
+      {
+        "routeTable": {
+          "transitGatewayRouteTableId": "tgw-rtb--tky-1",
+          "transitGatewayId": "tgw-tky-1",
+          "state": "available",
+          "defaultAssociationRouteTable": true,
+          "defaultPropagationRouteTable": true,
+          "tags": {
+            "Name": "tgw-tky-1-default-rtb"
+          }
+        },
+        "routes": [
+          {
+            "destinationCidrBlock": "10.11.0.0/20",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-tky-1",
+                "resourceType": "vpc",
+                "resourceId": "vpc-0"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "transitGatewayAttachments": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      }
+    ],
+    "tgw-tky-2": [
+      {
+        "routeTable": {
+          "transitGatewayRouteTableId": "tgw-rtb--tky-2",
+          "transitGatewayId": "tgw-tky-2",
+          "state": "available",
+          "defaultAssociationRouteTable": true,
+          "defaultPropagationRouteTable": true,
+          "tags": {
+            "Name": "tgw-tky-2-default-rtb"
+          }
+        },
+        "routes": [
+          {
+            "destinationCidrBlock": "10.12.0.0/20",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-tky-2",
+                "resourceType": "vpc",
+                "resourceId": "vpc-0"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "transitGatewayAttachments": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      }
+    ],
+    "tgw-osk01": [
+      {
+        "routeTable": {
+          "transitGatewayRouteTableId": "tgw-rtb--osk01",
+          "transitGatewayId": "tgw-osk01",
+          "state": "available",
+          "defaultAssociationRouteTable": true,
+          "defaultPropagationRouteTable": true,
+          "tags": {
+            "Name": "tgw-osk01-default-rtb"
+          }
+        },
+        "routes": [
+          {
+            "destinationCidrBlock": "10.21.0.0/20",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-osk01a",
+                "resourceType": "vpc",
+                "resourceId": "vpc-0"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.22.0.0/20",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-osk01b",
+                "resourceType": "vpc",
+                "resourceId": "vpc-1"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "transitGatewayAttachments": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      }
+    ],
+    "tgw-osk02": [
+      {
+        "routeTable": {
+          "transitGatewayRouteTableId": "tgw-rtb--osk02",
+          "transitGatewayId": "tgw-osk02",
+          "state": "available",
+          "defaultAssociationRouteTable": true,
+          "defaultPropagationRouteTable": true,
+          "tags": {
+            "Name": "tgw-osk02-default-rtb"
+          }
+        },
+        "routes": [
+          {
+            "destinationCidrBlock": "10.23.0.0/20",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-osk02a",
+                "resourceType": "vpc",
+                "resourceId": "vpc-0"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "transitGatewayAttachments": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      }
+    ]
+  },
+  "cloudWanCoreNetworks": [
+    {
+      "coreNetworkId": "core-network-0a1b2c3d",
+      "coreNetworkArn": "arn:aws:networkmanager::111111111111:core-network/core-network-0a1b2c3d",
+      "globalNetworkId": "global-network-001",
+      "description": "CloudWAN Core Network v2",
+      "state": "AVAILABLE",
+      "edges": [
+        {
+          "edgeLocation": "ap-northeast-1",
+          "asn": 64512,
+          "insideCidrBlocks": [
+            "10.100.0.0/16"
+          ]
+        },
+        {
+          "edgeLocation": "ap-northeast-3",
+          "asn": 64513,
+          "insideCidrBlocks": [
+            "10.101.0.0/16"
+          ]
+        },
+        {
+          "edgeLocation": "us-east-1",
+          "asn": 64514,
+          "insideCidrBlocks": [
+            "10.102.0.0/16"
+          ]
+        }
+      ],
+      "segments": [
+        {
+          "name": "shared",
+          "edgeLocations": [
+            "ap-northeast-1",
+            "ap-northeast-3",
+            "us-east-1"
+          ],
+          "sharedSegments": []
+        },
+        {
+          "name": "prod",
+          "edgeLocations": [
+            "ap-northeast-1",
+            "ap-northeast-3",
+            "us-east-1"
+          ],
+          "sharedSegments": []
+        },
+        {
+          "name": "dev",
+          "edgeLocations": [
+            "ap-northeast-1",
+            "ap-northeast-3"
+          ],
+          "sharedSegments": []
+        }
+      ]
+    }
+  ],
+  "cloudWanAttachments": [
+    {
+      "attachmentId": "attachment-osk-dx",
+      "coreNetworkId": "core-network-0a1b2c3d",
+      "ownerAccountId": "111111111111",
+      "attachmentType": "direct-connect-gateway",
+      "edgeLocation": "ap-northeast-3",
+      "resourceArn": "arn:aws:directconnect::111111111111:dx-gateway/dxgw-0004",
+      "segmentName": "prod",
+      "state": "AVAILABLE",
+      "tags": {
+        "Name": "DXGW-Osaka-Attachment"
+      }
+    },
+    {
+      "attachmentId": "attachment-usva-vgw",
+      "coreNetworkId": "core-network-0a1b2c3d",
+      "ownerAccountId": "111111111111",
+      "attachmentType": "site-to-site-vpn",
+      "edgeLocation": "us-east-1",
+      "resourceArn": "arn:aws:ec2:us-east-1:111111111111:vpn-gateway/vgw-usva01",
+      "segmentName": "shared",
+      "state": "AVAILABLE",
+      "tags": {
+        "Name": "VGW-USVA-Attachment"
+      }
+    }
+  ],
+  "cloudWanPeerings": [
+    {
+      "peeringId": "peering-tky-1",
+      "coreNetworkId": "core-network-0a1b2c3d",
+      "peeringType": "TRANSIT_GATEWAY",
+      "edgeLocation": "ap-northeast-1",
+      "resourceArn": "arn:aws:ec2:ap-northeast-1:111111111111:transit-gateway/tgw-tky-1",
+      "state": "AVAILABLE",
+      "tags": {
+        "Name": "TGW-TKY-1-Peering"
+      }
+    },
+    {
+      "peeringId": "peering-tky-2",
+      "coreNetworkId": "core-network-0a1b2c3d",
+      "peeringType": "TRANSIT_GATEWAY",
+      "edgeLocation": "ap-northeast-1",
+      "resourceArn": "arn:aws:ec2:ap-northeast-1:111111111111:transit-gateway/tgw-tky-2",
+      "state": "AVAILABLE",
+      "tags": {
+        "Name": "TGW-TKY-2-Peering"
+      }
+    },
+    {
+      "peeringId": "peering-osk-1",
+      "coreNetworkId": "core-network-0a1b2c3d",
+      "peeringType": "TRANSIT_GATEWAY",
+      "edgeLocation": "ap-northeast-3",
+      "resourceArn": "arn:aws:ec2:ap-northeast-3:111111111111:transit-gateway/tgw-osk01",
+      "state": "AVAILABLE",
+      "tags": {
+        "Name": "TGW-OSK-1-Peering"
+      }
+    },
+    {
+      "peeringId": "peering-osk-2",
+      "coreNetworkId": "core-network-0a1b2c3d",
+      "peeringType": "TRANSIT_GATEWAY",
+      "edgeLocation": "ap-northeast-3",
+      "resourceArn": "arn:aws:ec2:ap-northeast-3:111111111111:transit-gateway/tgw-osk02",
+      "state": "AVAILABLE",
+      "tags": {
+        "Name": "TGW-OSK-2-Peering"
+      }
+    }
+  ],
+  "cloudWanRoutes": {
+    "core-network-0a1b2c3d": [
+      {
+        "segmentName": "prod",
+        "edgeLocation": "ap-northeast-1",
+        "routes": [
+          {
+            "destinationCidrBlock": "172.16.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-prod-ap-northeast-1-1",
+                "segmentName": "prod",
+                "edgeLocation": "ap-northeast-1",
+                "resourceType": "vpc",
+                "resourceId": "vpc-t-1a"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "172.17.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-prod-ap-northeast-1-2",
+                "segmentName": "prod",
+                "edgeLocation": "ap-northeast-1",
+                "resourceType": "vpc",
+                "resourceId": "vpc-t-1b"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-prod-ap-northeast-1-3",
+                "segmentName": "prod",
+                "edgeLocation": "ap-northeast-1",
+                "resourceType": "transit-gateway",
+                "resourceId": "tgw-t-1"
+              }
+            ],
+            "type": "static",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.99.0.0/16",
+            "destinations": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      },
+      {
+        "segmentName": "prod",
+        "edgeLocation": "ap-northeast-3",
+        "routes": [
+          {
+            "destinationCidrBlock": "172.16.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-prod-ap-northeast-3-1",
+                "segmentName": "prod",
+                "edgeLocation": "ap-northeast-3",
+                "resourceType": "vpc",
+                "resourceId": "vpc-t-3a"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "172.17.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-prod-ap-northeast-3-2",
+                "segmentName": "prod",
+                "edgeLocation": "ap-northeast-3",
+                "resourceType": "vpc",
+                "resourceId": "vpc-t-3b"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-prod-ap-northeast-3-3",
+                "segmentName": "prod",
+                "edgeLocation": "ap-northeast-3",
+                "resourceType": "transit-gateway",
+                "resourceId": "tgw-t-3"
+              }
+            ],
+            "type": "static",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.99.0.0/16",
+            "destinations": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      },
+      {
+        "segmentName": "prod",
+        "edgeLocation": "us-east-1",
+        "routes": [
+          {
+            "destinationCidrBlock": "172.16.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-prod-us-east-1-1",
+                "segmentName": "prod",
+                "edgeLocation": "us-east-1",
+                "resourceType": "vpc",
+                "resourceId": "vpc-t-1a"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "172.17.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-prod-us-east-1-2",
+                "segmentName": "prod",
+                "edgeLocation": "us-east-1",
+                "resourceType": "vpc",
+                "resourceId": "vpc-t-1b"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-prod-us-east-1-3",
+                "segmentName": "prod",
+                "edgeLocation": "us-east-1",
+                "resourceType": "transit-gateway",
+                "resourceId": "tgw-t-1"
+              }
+            ],
+            "type": "static",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.99.0.0/16",
+            "destinations": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      },
+      {
+        "segmentName": "shared",
+        "edgeLocation": "ap-northeast-1",
+        "routes": [
+          {
+            "destinationCidrBlock": "172.16.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-shared-ap-northeast-1-1",
+                "segmentName": "shared",
+                "edgeLocation": "ap-northeast-1",
+                "resourceType": "vpc",
+                "resourceId": "vpc-t-1a"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "172.17.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-shared-ap-northeast-1-2",
+                "segmentName": "shared",
+                "edgeLocation": "ap-northeast-1",
+                "resourceType": "vpc",
+                "resourceId": "vpc-t-1b"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-shared-ap-northeast-1-3",
+                "segmentName": "shared",
+                "edgeLocation": "ap-northeast-1",
+                "resourceType": "transit-gateway",
+                "resourceId": "tgw-t-1"
+              }
+            ],
+            "type": "static",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.99.0.0/16",
+            "destinations": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      },
+      {
+        "segmentName": "shared",
+        "edgeLocation": "ap-northeast-3",
+        "routes": [
+          {
+            "destinationCidrBlock": "172.16.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-shared-ap-northeast-3-1",
+                "segmentName": "shared",
+                "edgeLocation": "ap-northeast-3",
+                "resourceType": "vpc",
+                "resourceId": "vpc-t-3a"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "172.17.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-shared-ap-northeast-3-2",
+                "segmentName": "shared",
+                "edgeLocation": "ap-northeast-3",
+                "resourceType": "vpc",
+                "resourceId": "vpc-t-3b"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-shared-ap-northeast-3-3",
+                "segmentName": "shared",
+                "edgeLocation": "ap-northeast-3",
+                "resourceType": "transit-gateway",
+                "resourceId": "tgw-t-3"
+              }
+            ],
+            "type": "static",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.99.0.0/16",
+            "destinations": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      },
+      {
+        "segmentName": "shared",
+        "edgeLocation": "us-east-1",
+        "routes": [
+          {
+            "destinationCidrBlock": "172.16.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-shared-us-east-1-1",
+                "segmentName": "shared",
+                "edgeLocation": "us-east-1",
+                "resourceType": "vpc",
+                "resourceId": "vpc-t-1a"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "172.17.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-shared-us-east-1-2",
+                "segmentName": "shared",
+                "edgeLocation": "us-east-1",
+                "resourceType": "vpc",
+                "resourceId": "vpc-t-1b"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-shared-us-east-1-3",
+                "segmentName": "shared",
+                "edgeLocation": "us-east-1",
+                "resourceType": "transit-gateway",
+                "resourceId": "tgw-t-1"
+              }
+            ],
+            "type": "static",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.99.0.0/16",
+            "destinations": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      },
+      {
+        "segmentName": "dev",
+        "edgeLocation": "ap-northeast-1",
+        "routes": [
+          {
+            "destinationCidrBlock": "172.16.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-dev-ap-northeast-1-1",
+                "segmentName": "dev",
+                "edgeLocation": "ap-northeast-1",
+                "resourceType": "vpc",
+                "resourceId": "vpc-t-1a"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "172.17.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-dev-ap-northeast-1-2",
+                "segmentName": "dev",
+                "edgeLocation": "ap-northeast-1",
+                "resourceType": "vpc",
+                "resourceId": "vpc-t-1b"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-dev-ap-northeast-1-3",
+                "segmentName": "dev",
+                "edgeLocation": "ap-northeast-1",
+                "resourceType": "transit-gateway",
+                "resourceId": "tgw-t-1"
+              }
+            ],
+            "type": "static",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.99.0.0/16",
+            "destinations": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      },
+      {
+        "segmentName": "dev",
+        "edgeLocation": "ap-northeast-3",
+        "routes": [
+          {
+            "destinationCidrBlock": "172.16.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-dev-ap-northeast-3-1",
+                "segmentName": "dev",
+                "edgeLocation": "ap-northeast-3",
+                "resourceType": "vpc",
+                "resourceId": "vpc-t-3a"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "172.17.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-dev-ap-northeast-3-2",
+                "segmentName": "dev",
+                "edgeLocation": "ap-northeast-3",
+                "resourceType": "vpc",
+                "resourceId": "vpc-t-3b"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "destinations": [
+              {
+                "coreNetworkAttachmentId": "attachment-dev-ap-northeast-3-3",
+                "segmentName": "dev",
+                "edgeLocation": "ap-northeast-3",
+                "resourceType": "transit-gateway",
+                "resourceId": "tgw-t-3"
+              }
+            ],
+            "type": "static",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.99.0.0/16",
+            "destinations": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      }
+    ]
+  },
+  "connectionUtilization": {
+    "dxcon-fghzsvh1": {
+      "ingressBpsPeak": 16000000,
+      "egressBpsPeak": 24500000
+    },
+    "dxcon-fghqjw4y": {
+      "ingressBpsPeak": 17500000,
+      "egressBpsPeak": 17500000
+    },
+    "dxcon-fghjopl1": {
+      "ingressBpsPeak": 15000000,
+      "egressBpsPeak": 17500000
+    },
+    "dxcon-ffxokvu2": {
+      "ingressBpsPeak": 21000000,
+      "egressBpsPeak": 24500000
+    },
+    "dxcon-fgdbtvz3": {
+      "ingressBpsPeak": 22500000,
+      "egressBpsPeak": 17500000
+    },
+    "dxcon-fgabvk25": {
+      "ingressBpsPeak": 21500000,
+      "egressBpsPeak": 28000000
+    }
+  },
+  "vifUtilization": {
+    "dxvif-cw001": {
+      "ingressBpsPeak": 18275000,
+      "egressBpsPeak": 23800000
+    },
+    "dxvif-cw002": {
+      "ingressBpsPeak": 18700000,
+      "egressBpsPeak": 26775000
+    },
+    "dxvif-cw003": {
+      "ingressBpsPeak": 19125000,
+      "egressBpsPeak": 14875000
+    },
+    "dxvif-cw004": {
+      "ingressBpsPeak": 19550000,
+      "egressBpsPeak": 17850000
+    },
+    "dxvif-cw005": {
+      "ingressBpsPeak": 19975000,
+      "egressBpsPeak": 20825000
+    },
+    "dxvif-cw006": {
+      "ingressBpsPeak": 20400000,
+      "egressBpsPeak": 23800000
+    }
+  },
+  "utilizationWindowDays": 30
+}

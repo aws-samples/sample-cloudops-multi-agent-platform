@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Bootstrap stack for CloudOps Multi-Agent Platform Terraform state.
+  Creates an S3 bucket and DynamoDB table for remote state locking.
+
+Parameters:
+  ProjectPrefix:
+    Type: String
+    Default: cloudops
+  Environment:
+    Type: String
+    Default: dev
+
+Resources:
+  StateBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Sub "${ProjectPrefix}-tf-state-${Environment}"
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: project
+          Value: !Ref ProjectPrefix
+        - Key: environment
+          Value: !Ref Environment
+        - Key: managed_by
+          Value: cloudformation-bootstrap
+        - Key: auto-delete
+          Value: "no"
+
+  LockTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    Properties:
+      TableName: !Sub "${ProjectPrefix}-tf-lock-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: LockID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: LockID
+          KeyType: HASH
+      Tags:
+        - Key: project
+          Value: !Ref ProjectPrefix
+        - Key: environment
+          Value: !Ref Environment
+        - Key: managed_by
+          Value: cloudformation-bootstrap
+        - Key: auto-delete
+          Value: "no"
+
+Outputs:
+  StateBucketName:
+    Value: !Ref StateBucket
+  LockTableName:
+    Value: !Ref LockTable

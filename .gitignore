@@ -1,0 +1,103 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Virtual environment
+.venv/
+
+# Local probe-equivalent scanners (bandit + semgrep + checkov + gitleaks).
+# Run via scripts/scan-local.sh. Out of repo so we don't ship MB of scanner deps.
+.venv-scan/
+.scan-cache/
+
+# Pytest
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Terraform — match in any subdirectory under terraform/ so multi-stack layouts
+# (e.g. terraform/health-org-enablement/.terraform/) don't accidentally commit
+# provider binaries or lock files.
+terraform/**/.terraform/
+terraform/**/*.tfstate
+terraform/**/*.tfstate.backup
+terraform/**/*.tfvars
+terraform/**/.terraform.lock.hcl
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/*.tfvars
+terraform/.terraform.lock.hcl
+
+# Environment files (contain secrets, Cognito creds, runtime-specific config)
+.env
+scripts/.env
+src/frontend/.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Lambda packaging (build artifacts)
+src/lambda/mcp/*.zip
+src/lambda/frontend/*.zip
+src/lambda/frontend/*/package/
+src/lambda/collectors/**/*.zip
+.lambda-hashes/
+
+# Per-agent hierarchy.json slices, written by scripts/lib/build.sh before
+# each container build so edits to other agents' entries don't invalidate
+# this agent's hash. Regenerated every build.
+src/agents/.hierarchy-*.json
+
+# Frontend build artifacts
+src/frontend/.next/
+src/frontend/out/
+src/frontend/node_modules/
+
+# Reference project (not part of this repo)
+ref/
+
+# Kiro AI-assistant config & steering docs — local dev tooling, not shipped publicly.
+.kiro/
+
+# Docker/Finch
+*.tar
+
+# Local maintenance scripts (not part of the project)
+finch-cleanup.sh
+
+# Claude Code AI-assistant config — local dev tooling, not shipped publicly.
+.claude/
+
+# Local CLAUDE.md context files (Claude Code auto-loads these). The same
+# content is shipped publicly under tool-neutral names (docs/development.md
+# and per-directory README.md), so the CLAUDE.md copies stay local-only.
+CLAUDE.md
+**/CLAUDE.md
+
+# Temp workspace — migration-specific notes, reference screenshots, helper scripts.
+# Nothing in here gets committed. Use for any scratch/working material.
+temp/
+
+# Local debug/dev CLIs — not part of the shipped product, excluded from public repo.
+scripts/debug/
+Makefile.local
+.claude/commands/*.local.md
+
+# MCP server config (contains local paths, dev-only tools)
+.mcp.json
+
+# Playwright MCP runtime artifacts (snapshot yaml, console logs per test run)
+.playwright-mcp/
+

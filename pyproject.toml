@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cloudops-multi-agent-platform"
+version = "0.1.0"
+description = "CloudOps Multi-Agent Platform: Supervisor-SubAgent architecture for AWS cloud operations management"
+requires-python = ">=3.10"
+dependencies = [
+    "strands-agents[a2a,otel]",
+    "strands-agents-tools",
+    "bedrock-agentcore",
+    "mcp>=1.10.0",
+    "boto3",
+    "httpx",
+    "streamlit",
+]
+
+[project.optional-dependencies]
+dev = [
+    "hypothesis",
+    "pytest",
+    "pytest-asyncio",
+    "moto[all]",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["shared*", "agents*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "topology: Topology-flexibility tests (shell scripts + terraform validate, no AWS creds, no deploy). Included in `make test` — runs in ~15s.",
+]
+

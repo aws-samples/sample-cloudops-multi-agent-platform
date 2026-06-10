@@ -1,0 +1,403 @@
+{
+  "homeAccountId": "111111111111",
+  "locations": [
+    {
+      "locationCode": "EqSG2",
+      "locationName": "Equinix SG2 (Singapore)",
+      "region": "ap-southeast-1",
+      "availablePortSpeeds": [
+        "1Gbps",
+        "10Gbps"
+      ]
+    },
+    {
+      "locationCode": "EqTY2",
+      "locationName": "Equinix TY2 (Tokyo)",
+      "region": "ap-northeast-1",
+      "availablePortSpeeds": [
+        "1Gbps",
+        "10Gbps"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "connectionId": "dxcon-hub001",
+      "connectionName": "DX-Hub-SG-Primary",
+      "connectionState": "available",
+      "location": "EqSG2",
+      "bandwidth": "10Gbps",
+      "region": "ap-southeast-1",
+      "hasBfd": true,
+      "awsDeviceV2": "EqSG2-1a2b3c4d",
+      "awsLogicalDeviceId": "EqSG2-lg1a"
+    },
+    {
+      "connectionId": "dxcon-hub002",
+      "connectionName": "DX-Hub-SG-Secondary",
+      "connectionState": "available",
+      "location": "EqSG2",
+      "bandwidth": "10Gbps",
+      "region": "ap-southeast-1",
+      "hasBfd": true,
+      "awsDeviceV2": "EqSG2-5e6f7g8h",
+      "awsLogicalDeviceId": "EqSG2-lg1b"
+    },
+    {
+      "connectionId": "dxcon-hub003",
+      "connectionName": "DX-Hub-TY-Primary",
+      "connectionState": "available",
+      "location": "EqTY2",
+      "bandwidth": "10Gbps",
+      "region": "ap-northeast-1",
+      "hasBfd": true,
+      "awsDeviceV2": "EqTY2-9a0b1c2d",
+      "awsLogicalDeviceId": "EqTY2-lg1a"
+    }
+  ],
+  "virtualInterfaces": [
+    {
+      "virtualInterfaceId": "dxvif-hub01",
+      "virtualInterfaceName": "Transit-VIF-Primary",
+      "virtualInterfaceType": "transit",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-hub001",
+      "directConnectGatewayId": "dxgw-hub01",
+      "vlan": 100,
+      "asn": 65000,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-h01",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 65000,
+          "customerAddress": "169.254.0.2/30",
+          "amazonAddress": "169.254.0.1/30"
+        }
+      ],
+      "region": "ap-southeast-1",
+      "awsDeviceV2": "EqSG2-1a2b3c4d",
+      "awsLogicalDeviceId": "EqSG2-lg1a"
+    },
+    {
+      "virtualInterfaceId": "dxvif-hub02",
+      "virtualInterfaceName": "Transit-VIF-Secondary",
+      "virtualInterfaceType": "transit",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-hub002",
+      "directConnectGatewayId": "dxgw-hub01",
+      "vlan": 200,
+      "asn": 65000,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-h02",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 65000,
+          "customerAddress": "169.254.1.2/30",
+          "amazonAddress": "169.254.1.1/30"
+        }
+      ],
+      "region": "ap-southeast-1",
+      "awsDeviceV2": "EqSG2-5e6f7g8h",
+      "awsLogicalDeviceId": "EqSG2-lg1b"
+    },
+    {
+      "virtualInterfaceId": "dxvif-hub03",
+      "virtualInterfaceName": "Transit-VIF-Tokyo",
+      "virtualInterfaceType": "transit",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-hub003",
+      "directConnectGatewayId": "dxgw-hub01",
+      "vlan": 300,
+      "asn": 65000,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-h03",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 65000,
+          "customerAddress": "169.254.2.2/30",
+          "amazonAddress": "169.254.2.1/30"
+        }
+      ],
+      "region": "ap-northeast-1",
+      "awsDeviceV2": "EqTY2-9a0b1c2d",
+      "awsLogicalDeviceId": "EqTY2-lg1a"
+    }
+  ],
+  "dxGateways": [
+    {
+      "directConnectGatewayId": "dxgw-hub01",
+      "directConnectGatewayName": "Hub-DX-Gateway",
+      "amazonSideAsn": 64512,
+      "directConnectGatewayState": "available"
+    }
+  ],
+  "dxGatewayAssociations": [
+    {
+      "directConnectGatewayId": "dxgw-hub01",
+      "associatedGateway": {
+        "id": "tgw-hub01",
+        "type": "transitGateway",
+        "region": "ap-southeast-1",
+        "ownerAccount": "111111111111"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.0.0.0/8",
+        "172.16.0.0/12"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-hub01",
+      "associatedGateway": {
+        "id": "tgw-spoke-a",
+        "type": "transitGateway",
+        "region": "us-east-1",
+        "ownerAccount": "222222222222"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.0.0.0/8",
+        "172.16.0.0/12"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-hub01",
+      "associatedGateway": {
+        "id": "vgw-spoke-b",
+        "type": "virtualPrivateGateway",
+        "region": "eu-west-1",
+        "ownerAccount": "333333333333"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.0.0.0/8",
+        "172.16.0.0/12"
+      ]
+    },
+    {
+      "directConnectGatewayId": "dxgw-hub01",
+      "associatedGateway": {
+        "id": "tgw-spoke-c",
+        "type": "transitGateway",
+        "region": "ap-northeast-1",
+        "ownerAccount": "444444444444"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.0.0.0/8",
+        "172.16.0.0/12"
+      ]
+    }
+  ],
+  "lags": [],
+  "vpcs": [
+    {
+      "vpcId": "vpc-hub01",
+      "cidrBlock": "10.0.0.0/16",
+      "tags": {
+        "Name": "Hub-Network-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-hub02",
+      "cidrBlock": "10.1.0.0/16",
+      "tags": {
+        "Name": "Hub-Shared-Services"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    }
+  ],
+  "vpnGateways": [],
+  "vpnConnections": [],
+  "customerGateways": [],
+  "transitGateways": [
+    {
+      "transitGatewayId": "tgw-hub01",
+      "transitGatewayArn": "arn:aws:ec2:ap-southeast-1:111111111111:transit-gateway/tgw-hub01",
+      "state": "available",
+      "ownerId": "111111111111",
+      "description": "Hub Transit Gateway",
+      "amazonSideAsn": 64512,
+      "tags": {
+        "Name": "Hub-TGW"
+      }
+    }
+  ],
+  "transitGatewayAttachments": [
+    {
+      "transitGatewayAttachmentId": "tgw-attach-h01",
+      "transitGatewayId": "tgw-hub01",
+      "resourceType": "vpc",
+      "resourceId": "vpc-hub01",
+      "resourceOwnerId": "111111111111",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-h02",
+      "transitGatewayId": "tgw-hub01",
+      "resourceType": "vpc",
+      "resourceId": "vpc-hub02",
+      "resourceOwnerId": "111111111111",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-dx",
+      "transitGatewayId": "tgw-hub01",
+      "resourceType": "direct-connect-gateway",
+      "resourceId": "dxgw-hub01",
+      "resourceOwnerId": "111111111111",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-spoke-a1",
+      "transitGatewayId": "tgw-hub01",
+      "resourceType": "vpc",
+      "resourceId": "vpc-spoke-a1",
+      "resourceOwnerId": "222222222222",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-spoke-a2",
+      "transitGatewayId": "tgw-hub01",
+      "resourceType": "vpc",
+      "resourceId": "vpc-spoke-a2",
+      "resourceOwnerId": "222222222222",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-spoke-b1",
+      "transitGatewayId": "tgw-hub01",
+      "resourceType": "vpc",
+      "resourceId": "vpc-spoke-b1",
+      "resourceOwnerId": "333333333333",
+      "state": "available"
+    },
+    {
+      "transitGatewayAttachmentId": "tgw-attach-peering-hub",
+      "transitGatewayId": "tgw-hub01",
+      "resourceType": "peering",
+      "resourceId": "tgw-spoke-c",
+      "resourceOwnerId": "111111111111",
+      "state": "available"
+    }
+  ],
+  "transitGatewayPeeringAttachments": [
+    {
+      "transitGatewayAttachmentId": "tgw-attach-peering-hub",
+      "requesterTgwInfo": {
+        "transitGatewayId": "tgw-hub01",
+        "region": "ap-southeast-1",
+        "ownerId": "111111111111"
+      },
+      "accepterTgwInfo": {
+        "transitGatewayId": "tgw-spoke-c",
+        "region": "ap-northeast-1",
+        "ownerId": "444444444444"
+      },
+      "state": "available",
+      "tags": {
+        "Name": "Hub-SG-to-Spoke-TY-Peering"
+      }
+    }
+  ],
+  "vpcPeerings": [],
+  "tgwRouteTables": {
+    "tgw-hub01": [
+      {
+        "routeTable": {
+          "transitGatewayRouteTableId": "tgw-rtb--hub01",
+          "transitGatewayId": "tgw-hub01",
+          "state": "available",
+          "defaultAssociationRouteTable": true,
+          "defaultPropagationRouteTable": true,
+          "tags": {
+            "Name": "tgw-hub01-default-rtb"
+          }
+        },
+        "routes": [
+          {
+            "destinationCidrBlock": "10.0.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-h01",
+                "resourceType": "vpc",
+                "resourceId": "vpc-0"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "10.1.0.0/16",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-h02",
+                "resourceType": "vpc",
+                "resourceId": "vpc-1"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "172.16.0.0/12",
+            "transitGatewayAttachments": [
+              {
+                "transitGatewayAttachmentId": "tgw-attach-spoke-a1",
+                "resourceType": "vpc",
+                "resourceId": "vpc-2"
+              }
+            ],
+            "type": "propagated",
+            "state": "active"
+          },
+          {
+            "destinationCidrBlock": "192.168.0.0/16",
+            "transitGatewayAttachments": [],
+            "type": "static",
+            "state": "blackhole"
+          }
+        ]
+      }
+    ]
+  },
+  "cloudWanCoreNetworks": [],
+  "cloudWanAttachments": [],
+  "cloudWanPeerings": [],
+  "cloudWanRoutes": {},
+  "connectionUtilization": {
+    "dxcon-hub001": {
+      "ingressBpsPeak": 3900000000,
+      "egressBpsPeak": 6300000000
+    },
+    "dxcon-hub002": {
+      "ingressBpsPeak": 4000000000,
+      "egressBpsPeak": 3500000000
+    },
+    "dxcon-hub003": {
+      "ingressBpsPeak": 4100000000,
+      "egressBpsPeak": 4200000000
+    }
+  },
+  "vifUtilization": {
+    "dxvif-hub01": {
+      "ingressBpsPeak": 3060000000,
+      "egressBpsPeak": 3570000000
+    },
+    "dxvif-hub02": {
+      "ingressBpsPeak": 3145000000,
+      "egressBpsPeak": 4165000000
+    },
+    "dxvif-hub03": {
+      "ingressBpsPeak": 3230000000,
+      "egressBpsPeak": 4760000000
+    }
+  },
+  "utilizationWindowDays": 30
+}

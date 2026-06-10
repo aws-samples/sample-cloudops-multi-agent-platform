@@ -1,0 +1,574 @@
+@import "tailwindcss";
+
+/* ── CloudOps Agent — Light / Dark Theme ── */
+
+/* Light theme (default) */
+:root {
+  color-scheme: light;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-surface: #f1f3f5;
+  --bg-elevated: #e9ecef;
+  --border-subtle: #e9ecef;
+  --border-default: #dee2e6;
+  --border-active: #adb5bd;
+  --text-primary: #212529;
+  --text-secondary: #495057;
+  --text-muted: #868e96;
+  --accent: #10b981;
+  --accent-dim: #059669;
+  --accent-surface: rgba(16, 185, 129, 0.08);
+  --accent-ai: #4F46E5;
+  --accent-ai-dim: #3730A3;
+  --danger: #ef4444;
+  --warning: #d97706;
+
+  --shadow-dropdown: rgba(0, 0, 0, 0.1);
+  --accent-border: rgba(16, 185, 129, 0.25);
+  --accent-border-subtle: rgba(16, 185, 129, 0.2);
+  --accent-hover: rgba(16, 185, 129, 0.12);
+  --accent-bg-faint: rgba(16, 185, 129, 0.06);
+  --warning-border: rgba(217, 119, 6, 0.25);
+  --selection-bg: rgba(16, 185, 129, 0.15);
+  --composer-shadow: rgba(0, 0, 0, 0.06);
+  --card-glow: rgba(16, 185, 129, 0.1);
+  --chart-cursor: rgba(16, 185, 129, 0.08);
+}
+
+/* Dark theme */
+.dark {
+  color-scheme: dark;
+  --bg-primary: #09090b;
+  --bg-secondary: #0c0c0f;
+  --bg-surface: #131316;
+  --bg-elevated: #1a1a1f;
+  --border-subtle: #1e1e24;
+  --border-default: #27272f;
+  --border-active: #3f3f4a;
+  --text-primary: #e4e4e7;
+  --text-secondary: #a1a1aa;
+  --text-muted: #8a8a96;
+  --accent: #34d399;
+  --accent-dim: #0f8a68;
+  --accent-surface: rgba(52, 211, 153, 0.06);
+  --accent-ai: #818CF8;
+  --accent-ai-dim: #6366F1;
+  --danger: #f87171;
+  --warning: #fbbf24;
+
+  --shadow-dropdown: rgba(0, 0, 0, 0.4);
+  --accent-border: rgba(52, 211, 153, 0.2);
+  --accent-border-subtle: rgba(52, 211, 153, 0.15);
+  --accent-hover: rgba(52, 211, 153, 0.15);
+  --accent-bg-faint: rgba(52, 211, 153, 0.04);
+  --warning-border: rgba(251, 191, 36, 0.2);
+  --selection-bg: rgba(52, 211, 153, 0.2);
+  --composer-shadow: rgba(0, 0, 0, 0.25);
+  --card-glow: rgba(52, 211, 153, 0.08);
+  --chart-cursor: rgba(52, 211, 153, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code,
+pre {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Selection */
+::selection {
+  background: var(--selection-bg);
+  color: var(--text-primary);
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 1.5px solid var(--border-active);
+  outline-offset: 2px;
+}
+
+/* Transitions — explicit properties, not 'all' */
+button,
+a,
+select {
+  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
+}
+
+input {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* ── Message entrance animation ── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-msg {
+  animation: fadeInUp 0.25s ease-out both;
+}
+
+/* ── Streaming cursor ── */
+@keyframes cursorBlink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+.streaming-cursor::after {
+  content: '▎';
+  display: inline;
+  color: var(--accent-ai);
+  animation: cursorBlink 1s steps(1) infinite;
+  font-weight: 300;
+  margin-left: 1px;
+}
+
+/* ── Composer focus ── */
+.composer-ring {
+  transition: border-color 0.2s ease;
+  box-shadow: 0 1px 6px 0 var(--composer-shadow);
+}
+
+.composer-ring:focus-within {
+  border-color: var(--border-active) !important;
+}
+
+.composer-ring *:focus,
+.composer-ring *:focus-visible {
+  outline: none !important;
+}
+
+/* ── Prose styling for markdown ── */
+.prose-finops {
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.prose-finops h1,
+.prose-finops h2,
+.prose-finops h3 {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin: 1.25em 0 0.4em;
+  text-wrap: balance;
+}
+
+.prose-finops h1 {
+  font-size: 1.25em;
+}
+
+.prose-finops h2 {
+  font-size: 1.1em;
+}
+
+.prose-finops h3 {
+  font-size: 1em;
+}
+
+.prose-finops p {
+  margin-bottom: 0.65em;
+}
+
+.prose-finops p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-finops ul,
+.prose-finops ol {
+  margin-bottom: 0.65em;
+  padding-left: 1.25em;
+}
+
+.prose-finops li {
+  margin-bottom: 0.2em;
+}
+
+.prose-finops strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.prose-finops a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose-finops code {
+  background: var(--bg-elevated);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.prose-finops pre {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 0.85em;
+  overflow-x: auto;
+  margin: 0.5em 0 0.75em;
+}
+
+.prose-finops pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.prose-finops hr {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: 1em 0;
+}
+
+.prose-finops table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  font-size: 0.85em;
+}
+
+.prose-finops th {
+  text-align: left;
+  padding: 0.5em 0.75em;
+  border-bottom: 1px solid var(--border-default);
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.prose-finops td {
+  padding: 0.45em 0.75em;
+  border-bottom: 1px solid var(--border-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Theme toggle ── */
+.theme-toggle {
+  transition: border-color 0.15s ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--border-active) !important;
+}
+
+.theme-toggle:active span {
+  transition-duration: 0.1s;
+}
+
+/* ── Collapsible sidebar ── */
+.sidebar-container {
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.sidebar-toggle {
+  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.sidebar-toggle:hover {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Skeleton shimmer ── */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--border-default) 50%, var(--bg-elevated) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* ── Artifact card ── */
+.artifact-card {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+button.artifact-card:hover {
+  border-color: var(--border-active) !important;
+  box-shadow: 0 2px 12px var(--card-glow);
+}
+
+/* Pulsing dot for generating state */
+.artifact-pulse {
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* ── Panel resize handle ── */
+.resize-handle {
+  cursor: col-resize;
+}
+
+.resize-handle::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  border-radius: 1px;
+  transition: background 0.15s ease;
+}
+
+.resize-handle:hover::after,
+.resize-handle.dragging::after {
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+
+/* ── Composer mode chip & menu ── */
+.mode-chip {
+  animation: fadeInUp 0.15s ease-out both;
+}
+
+.composer-menu {
+  animation: fadeInUp 0.12s ease-out both;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* React Flow handles ship with a 1px white ring (border-color: #fff, box-sizing:
+   border-box). On our 6px dots that ring eats 33% of the visible fill and creates
+   a subtle gap between the edge line and the dot. Drop the ring so the dot reads
+   as a single solid circle flush with the edge endpoint. */
+.react-flow__handle {
+  border: none !important;
+}
+
+/* Spotlight ring — rotating purple/blue/white gradient around a node border.
+   Triggered when the scorecard DXGW row (or similar out-of-canvas affordance)
+   wants to point at a single node without pulling in its connected path.
+   The white stops punch highlights into the sweep so the ring reads against
+   both dark and light canvases without washing out the brand colors. */
+@property --spotlight-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes spotlight-spin {
+  to { --spotlight-angle: 360deg; }
+}
+
+.node-spotlight::before,
+.node-pinned::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(
+    from var(--spotlight-angle),
+    #8b5cf6, #ffffff, #3b82f6, #ffffff, #8b5cf6, #ffffff, #3b82f6
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: spotlight-spin 2.5s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Fallback for browsers without @property support — plain bright ring still reads. */
+@supports not (background: conic-gradient(from 0deg, red, blue)) {
+  .node-spotlight::before,
+  .node-pinned::before {
+    background: #8b5cf6;
+  }
+}
+
+/* ---------- Visualizer-specific styles (ported from upstream SPA) -------- */
+
+/* Monospace font for resource IDs, CIDRs, ASNs, IPs, technical identifiers. */
+.font-tech {
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.01em;
+}
+
+/* Animated dashes on recommended (ghost) edges so they read as proposed,
+   not real, infrastructure. */
+@keyframes dash-flow {
+  to { stroke-dashoffset: -20; }
+}
+.recommended-edge path {
+  animation: dash-flow 2s linear infinite;
+}
+
+/* Traveling dot along an edge path — visualizes flow direction. The
+   <circle> is positioned via CSS Motion Path (offset-path / offset-distance)
+   in CustomEdge, and this keyframe drives offset-distance from 0%→100%.
+   Without this keyframe defined, the dot is rendered but never moves —
+   which is why "all edge is not animating" after the upstream port. */
+@keyframes edge-dot-flow {
+  from { offset-distance: 0%; }
+  to   { offset-distance: 100%; }
+}
+
+/* Edge spotlight — marching-ants stroke layered over a soft purple glow
+   underneath an existing edge. Lets a dxvif-* chip in the maintenance
+   calendar point at the actual VIF edge instead of the DXGW it terminates on. */
+@keyframes edge-spotlight-march {
+  to { stroke-dashoffset: -40; }
+}
+.edge-spotlight-march {
+  animation: edge-spotlight-march 1.2s linear infinite;
+}
+
+/* Simulation mode — pulsing red ring + vignette around the canvas. */
+@keyframes sim-ring-pulse {
+  0%, 100% {
+    box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.55), inset 0 0 40px rgba(239, 68, 68, 0.08);
+  }
+  50% {
+    box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.85), inset 0 0 60px rgba(239, 68, 68, 0.14);
+  }
+}
+.sim-canvas-frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  animation: sim-ring-pulse 2.2s ease-in-out infinite;
+  border-radius: 0;
+}
+.sim-canvas-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(239, 68, 68, 0.10) 100%);
+}
+
+/* Pulsing dot for live BGP/connection status indicators. */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.8); }
+}
+.live-dot {
+  position: relative;
+}
+.live-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: inherit;
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+/* TGW / Cloud WAN / VPC route panel scrollbar — thinner than global. */
+.tgw-route-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139,92,246,0.3) transparent;
+}
+.tgw-route-scroll::-webkit-scrollbar { width: 4px; }
+.tgw-route-scroll::-webkit-scrollbar-track { background: transparent; }
+.tgw-route-scroll::-webkit-scrollbar-thumb {
+  background: rgba(139,92,246,0.3);
+  border-radius: 4px;
+}
+.tgw-route-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(139,92,246,0.5);
+}
+
+/* Opt back into text selection inside node cards / edge labels when the
+   canvas is locked. React Flow disables user-select on nodes for drag
+   ergonomics; .selectable-text (paired with .nodrag and .nopan) lets users
+   copy labels, IDs, CIDRs, ASNs while reading or demoing. */
+[data-locked="true"] .selectable-text,
+[data-locked="true"] .selectable-text * {
+  -webkit-user-select: text;
+     -moz-user-select: text;
+          user-select: text;
+}
+[data-locked="true"] .selectable-text {
+  cursor: text;
+}
+[data-locked="true"] .selectable-text :where(button, a, [role="button"], input, select, textarea) {
+  cursor: pointer;
+}
+[data-locked="true"] .selectable-text ::selection {
+  background: rgba(139, 92, 246, 0.35);
+  color: inherit;
+}
+[data-theme="light"][data-locked="true"] .selectable-text ::selection {
+  background: rgba(124, 58, 237, 0.22);
+  color: inherit;
+}

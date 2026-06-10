@@ -1,0 +1,29 @@
+{
+    "name": "FinOps Monthly Report",
+    "description": "Monthly FinOps review covering spend overview, optimization opportunities, anomalies and budget status, and forward-looking forecast. Routes to the FinOps domain (cost-operations + pricing leaf agents).",
+    "sections": [
+        {
+            "id": "cost_overview",
+            "title": "Spend Overview",
+            "prompt": "Generate a monthly AWS spend overview for {month} {year}.\n\nCall `get_cost_and_usage` ONCE for {month} {year} with `Granularity=MONTHLY`, `Metrics=AmortizedCost,UnblendedCost`, and group by SERVICE. Then call `get_cost_and_usage_comparisons` ONCE comparing {month} {year} to the prior calendar month, grouped by SERVICE. Then call `get_cost_and_usage` ONCE for {month} {year} grouped by LINKED_ACCOUNT.\n\nExclude Credits, Refunds, and Tax from every figure by passing a `Filter` that NOTs the RECORD_TYPE dimension against those three values, and exclude AWS Marketplace by NOTing the SERVICE dimension against the value `AWS Marketplace`.\n\nRender as markdown:\n\n1. **Headline** — total Amortized and Unblended spend for {month} {year}, with absolute and percent change vs the prior month.\n2. **Top 5 services by spend** — table with columns Service | {month} Spend (USD) | Prior Month (USD) | MoM Δ (USD) | MoM Δ %. Sort by current spend descending. Flag any service with >20% MoM increase using a 🔴 prefix.\n3. **Top 3 accounts by spend** — table with columns Account ID | Spend (USD) | Share of Total %.\n\nFormat all amounts as USD with two decimal places. Do NOT include follow-up questions or suggestions."
+        },
+        {
+            "id": "savings_opportunities",
+            "title": "Savings Opportunities",
+            "prompt": "Generate the savings opportunity section for {month} {year}.\n\nCall `get_enrollment_status` ONCE first. If the account is not enrolled in Cost Optimization Hub, render exactly: \"Cost Optimization Hub is not enrolled for this account. Enable it in the AWS Billing console (Cost Optimization Hub → Enroll) to surface right-sizing, idle-resource, Savings Plans, and Reserved Instance recommendations.\" and stop.\n\nIf enrolled, call `list_recommendation_summaries` ONCE grouped by `ActionType` to see total estimated savings by recommendation category. Then call `list_recommendations` ONCE with `OrderBy=EstimatedMonthlySavings DESC`, default page size, to fetch the top opportunities.\n\nRender as markdown:\n\n1. **Headline** — total estimated monthly savings across all recommendations and the total recommendation count.\n2. **Savings by action type** — table with columns Action Type | Recommendation Count | Estimated Monthly Savings (USD). Sort by savings descending.\n3. **Top 10 individual recommendations** — table with columns Rank | Resource Type | Action Type | Region | Account ID | Estimated Monthly Savings (USD) | Effort. Sort by savings descending. Truncate Resource ARN-style identifiers to the resource name only.\n\nFormat all amounts as USD with two decimal places. Do NOT call `get_recommendation` for individual rows — the list response carries enough detail. Do NOT include follow-up questions or suggestions."
+        },
+        {
+            "id": "anomalies_and_budgets",
+            "title": "Anomalies & Budget Status",
+            "prompt": "Generate the anomalies and budgets section for {month} {year}.\n\nCall `get_anomalies` ONCE for the date range covering {month} {year} (start of month through end of month, or today if {month} {year} is the current month). Then call `get_billing_alerts` ONCE to fetch active AWS Budgets and their status.\n\nRender as markdown:\n\n1. **Cost anomalies** — table with columns Detected | Service / Linked Account | Impact (USD) | Anomaly Score | Root Cause. Sort by impact descending. If no anomalies were returned, render: \"No cost anomalies detected by AWS Cost Anomaly Detection during {month} {year}.\"\n2. **Budget status** — table with columns Budget Name | Type | Limit (USD) | Actual (USD) | Forecasted (USD) | Utilization % | Status. Status is 🔴 Over budget if actual > limit, 🟡 At risk if forecasted > limit, ✅ On track otherwise. If no budgets are configured, render: \"No AWS Budgets configured for this account. Budgets are a free AWS service — consider creating at least one cost budget per major workload.\"\n\nFormat all amounts as USD with two decimal places. Do NOT include follow-up questions or suggestions."
+        },
+        {
+            "id": "forecast",
+            "title": "Forecast & Outlook",
+            "prompt": "Generate a forward-looking spend forecast section.\n\nCall `get_cost_forecast` ONCE for the next calendar month after {month} {year}, with `Metric=AMORTIZED_COST` and `Granularity=MONTHLY`. Then call `get_cost_forecast` ONCE more for the same period grouped by SERVICE — if the forecast API rejects grouping, fall back to a `get_cost_and_usage` call for {month} {year} grouped by SERVICE and use those proportions to attribute the forecast.\n\nRender as markdown:\n\n1. **Headline forecast** — projected Amortized spend for the next calendar month, with the lower and upper bounds of the prediction interval and the confidence level.\n2. **Forecast vs {month} {year} actual** — one line stating the projected absolute and percent change vs the actual {month} spend computed in the Spend Overview section.\n3. **Top 5 forecast drivers** — table with columns Service | Projected Spend (USD) | Share %. Sort by projected spend descending.\n\nFormat all amounts as USD with two decimal places. Do NOT include follow-up questions or suggestions."
+        }
+    ],
+    "dependencies": {
+        "forecast": "cost_overview"
+    }
+}

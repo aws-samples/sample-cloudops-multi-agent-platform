@@ -1,0 +1,190 @@
+{
+  "homeAccountId": "123456789012",
+  "bgpPrefixMetrics": {
+    "dxvif-dt01": {
+      "accepted": 25,
+      "advertised": 8
+    },
+    "dxvif-dt02": {
+      "accepted": 25,
+      "advertised": 8
+    }
+  },
+  "locations": [
+    {
+      "locationCode": "DxDXB1",
+      "locationName": "AWS Direct Connect Dubai",
+      "region": "me-south-1",
+      "availablePortSpeeds": [
+        "1Gbps",
+        "10Gbps"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "connectionId": "dxcon-dt001",
+      "connectionName": "DX-Dubai-Primary",
+      "connectionState": "available",
+      "location": "DxDXB1",
+      "bandwidth": "1Gbps",
+      "region": "me-south-1",
+      "hasBfd": false,
+      "awsDeviceV2": "DxDXB1-1a2b3c4d",
+      "awsLogicalDeviceId": "DxDXB1-lg1a"
+    },
+    {
+      "connectionId": "dxcon-dt002",
+      "connectionName": "DX-Dubai-Secondary",
+      "connectionState": "available",
+      "location": "DxDXB1",
+      "bandwidth": "1Gbps",
+      "region": "me-south-1",
+      "hasBfd": false,
+      "awsDeviceV2": "DxDXB1-5e6f7g8h",
+      "awsLogicalDeviceId": "DxDXB1-lg1b"
+    }
+  ],
+  "virtualInterfaces": [
+    {
+      "virtualInterfaceId": "dxvif-dt01",
+      "virtualInterfaceName": "Private-VIF-Primary",
+      "virtualInterfaceType": "private",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-dt001",
+      "directConnectGatewayId": "dxgw-dt01",
+      "vlan": 100,
+      "asn": 65000,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-dt01",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 65000,
+          "customerAddress": "169.254.0.2/30",
+          "amazonAddress": "169.254.0.1/30"
+        }
+      ],
+      "region": "me-south-1",
+      "awsDeviceV2": "DxDXB1-1a2b3c4d",
+      "awsLogicalDeviceId": "DxDXB1-lg1a"
+    },
+    {
+      "virtualInterfaceId": "dxvif-dt02",
+      "virtualInterfaceName": "Private-VIF-Secondary",
+      "virtualInterfaceType": "private",
+      "virtualInterfaceState": "available",
+      "connectionId": "dxcon-dt002",
+      "directConnectGatewayId": "dxgw-dt01",
+      "vlan": 200,
+      "asn": 65000,
+      "bgpPeers": [
+        {
+          "bgpPeerId": "bgp-dt02",
+          "bgpPeerState": "available",
+          "bgpStatus": "up",
+          "asn": 65000,
+          "customerAddress": "169.254.1.2/30",
+          "amazonAddress": "169.254.1.1/30"
+        }
+      ],
+      "region": "me-south-1",
+      "awsDeviceV2": "DxDXB1-5e6f7g8h",
+      "awsLogicalDeviceId": "DxDXB1-lg1b"
+    }
+  ],
+  "dxGateways": [
+    {
+      "directConnectGatewayId": "dxgw-dt01",
+      "directConnectGatewayName": "DX-Gateway-Dubai-to-SG",
+      "amazonSideAsn": 64512,
+      "directConnectGatewayState": "available"
+    }
+  ],
+  "dxGatewayAssociations": [
+    {
+      "directConnectGatewayId": "dxgw-dt01",
+      "associatedGateway": {
+        "id": "vgw-dt01",
+        "type": "virtualPrivateGateway",
+        "region": "ap-southeast-1",
+        "ownerAccount": "123456789012"
+      },
+      "associationState": "associated",
+      "allowedPrefixes": [
+        "10.0.0.0/8",
+        "172.16.0.0/12"
+      ]
+    }
+  ],
+  "lags": [],
+  "vpcs": [
+    {
+      "vpcId": "vpc-dt01",
+      "cidrBlock": "10.0.0.0/16",
+      "tags": {
+        "Name": "Production-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    },
+    {
+      "vpcId": "vpc-dt02",
+      "cidrBlock": "10.1.0.0/16",
+      "tags": {
+        "Name": "Staging-VPC"
+      },
+      "region": "ap-southeast-1",
+      "state": "available"
+    }
+  ],
+  "vpnGateways": [
+    {
+      "vpnGatewayId": "vgw-dt01",
+      "vpcAttachments": [
+        {
+          "vpcId": "vpc-dt01",
+          "state": "attached"
+        }
+      ],
+      "type": "ipsec.1",
+      "amazonSideAsn": 64512,
+      "state": "available",
+      "tags": {
+        "Name": "vgw-dx-prod"
+      }
+    }
+  ],
+  "vpnConnections": [],
+  "customerGateways": [],
+  "transitGateways": [],
+  "transitGatewayAttachments": [],
+  "transitGatewayPeeringAttachments": [],
+  "vpcPeerings": [],
+  "tgwRouteTables": {},
+  "cloudWanCoreNetworks": [],
+  "cloudWanAttachments": [],
+  "cloudWanPeerings": [],
+  "cloudWanRoutes": {},
+  "connectionUtilization": {
+    "dxcon-dt001": {
+      "ingressBpsPeak": 360000000,
+      "egressBpsPeak": 420000000
+    },
+    "dxcon-dt002": {
+      "ingressBpsPeak": 370000000,
+      "egressBpsPeak": 490000000
+    }
+  },
+  "vifUtilization": {
+    "dxvif-dt01": {
+      "ingressBpsPeak": 280500000,
+      "egressBpsPeak": 476000000
+    },
+    "dxvif-dt02": {
+      "ingressBpsPeak": 289000000,
+      "egressBpsPeak": 535500000
+    }
+  },
+  "utilizationWindowDays": 30
+}

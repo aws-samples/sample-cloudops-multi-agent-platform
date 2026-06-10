@@ -1,0 +1,1030 @@
+{
+    "cost-explorer": {
+        "handler": "handler.handler",
+        "runtime": "python3.12",
+        "timeout": 30,
+        "memory": 256,
+        "env_vars": {
+            "CROSS_ACCOUNT_ROLE_ARN": "$CROSS_ACCOUNT_ROLE_ARN"
+        },
+        "iam_actions": [
+            "ce:GetCostAndUsage",
+            "ce:GetCostForecast",
+            "ce:GetDimensionValues",
+            "ce:GetTags"
+        ],
+        "tools": [
+            {
+                "name": "get_cost_and_usage",
+                "description": "Retrieve AWS cost and usage data with optional filtering and grouping. Returns cost breakdown by time period with grand total. Use get_today_date first to determine correct date ranges.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "start_date": {
+                            "type": "string",
+                            "description": "Start date in YYYY-MM-DD format"
+                        },
+                        "end_date": {
+                            "type": "string",
+                            "description": "End date in YYYY-MM-DD format (EXCLUSIVE - use first day of next period)"
+                        },
+                        "granularity": {
+                            "type": "string",
+                            "description": "DAILY, MONTHLY, or HOURLY (default: MONTHLY)"
+                        },
+                        "metrics": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Cost metrics: UnblendedCost, BlendedCost, AmortizedCost, etc. (default: [UnblendedCost])"
+                        },
+                        "group_by": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Dimensions to group by: SERVICE, REGION, LINKED_ACCOUNT, USAGE_TYPE, etc."
+                        },
+                        "filter": {
+                            "type": "object",
+                            "description": "Cost Explorer filter expression (optional)"
+                        }
+                    },
+                    "required": [
+                        "start_date",
+                        "end_date"
+                    ]
+                }
+            },
+            {
+                "name": "get_cost_and_usage_comparisons",
+                "description": "Compare costs between two time periods to identify changes and trends. Returns per-service comparison with change amounts and percentages.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "current_start": {
+                            "type": "string",
+                            "description": "Current period start date (YYYY-MM-DD)"
+                        },
+                        "current_end": {
+                            "type": "string",
+                            "description": "Current period end date (YYYY-MM-DD, exclusive)"
+                        },
+                        "previous_start": {
+                            "type": "string",
+                            "description": "Previous period start date (YYYY-MM-DD)"
+                        },
+                        "previous_end": {
+                            "type": "string",
+                            "description": "Previous period end date (YYYY-MM-DD, exclusive)"
+                        },
+                        "granularity": {
+                            "type": "string",
+                            "description": "DAILY or MONTHLY (default: MONTHLY)"
+                        },
+                        "metrics": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Metrics to compare (default: [UnblendedCost])"
+                        },
+                        "group_by": {
+                            "type": "string",
+                            "description": "Dimension to group by (default: SERVICE)"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "get_cost_forecast",
+                "description": "Generate cost forecasts based on historical usage patterns.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "start_date": {
+                            "type": "string",
+                            "description": "Forecast start date (YYYY-MM-DD, must be in the future)"
+                        },
+                        "end_date": {
+                            "type": "string",
+                            "description": "Forecast end date (YYYY-MM-DD)"
+                        },
+                        "granularity": {
+                            "type": "string",
+                            "description": "DAILY or MONTHLY (default: MONTHLY)"
+                        },
+                        "metric": {
+                            "type": "string",
+                            "description": "UNBLENDED_COST, BLENDED_COST, etc. (default: UNBLENDED_COST)"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "get_dimension_values",
+                "description": "Get available values for a Cost Explorer dimension (e.g., list all SERVICE names, REGION names).",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "dimension": {
+                            "type": "string",
+                            "description": "Dimension name: SERVICE, REGION, LINKED_ACCOUNT, USAGE_TYPE, etc."
+                        },
+                        "start_date": {
+                            "type": "string",
+                            "description": "Start date (YYYY-MM-DD)"
+                        },
+                        "end_date": {
+                            "type": "string",
+                            "description": "End date (YYYY-MM-DD)"
+                        }
+                    },
+                    "required": [
+                        "dimension"
+                    ]
+                }
+            },
+            {
+                "name": "get_tag_values",
+                "description": "Get available values for a specific cost allocation tag key.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "tag_key": {
+                            "type": "string",
+                            "description": "The tag key to get values for"
+                        },
+                        "start_date": {
+                            "type": "string",
+                            "description": "Start date (YYYY-MM-DD)"
+                        },
+                        "end_date": {
+                            "type": "string",
+                            "description": "End date (YYYY-MM-DD)"
+                        }
+                    },
+                    "required": [
+                        "tag_key"
+                    ]
+                }
+            }
+        ]
+    },
+    "cur-athena": {
+        "handler": "handler.handler",
+        "runtime": "python3.12",
+        "timeout": 60,
+        "memory": 256,
+        "env_vars": {
+            "CUR_DATABASE_NAME": "$CUR_DATABASE_NAME",
+            "CUR_TABLE_NAME": "$CUR_TABLE_NAME",
+            "ATHENA_WORKGROUP": "$ATHENA_WORKGROUP",
+            "ATHENA_OUTPUT_LOCATION": "$ATHENA_OUTPUT_LOCATION"
+        },
+        "iam_actions": [
+            "athena:StartQueryExecution",
+            "athena:GetQueryExecution",
+            "athena:GetQueryResults",
+            "athena:GetWorkGroup",
+            "athena:ListQueryExecutions",
+            "athena:BatchGetQueryExecution",
+            "athena:StopQueryExecution",
+            "athena:ListDatabases",
+            "athena:ListTableMetadata",
+            "athena:GetTableMetadata",
+            "s3:GetObject",
+            "s3:PutObject",
+            "s3:GetBucketLocation",
+            "s3:ListBucket",
+            "glue:GetDatabase",
+            "glue:GetTable",
+            "glue:GetPartitions"
+        ],
+        "tools": [
+            {
+                "name": "start_query_execution",
+                "description": "Execute a SQL query on CUR (Cost and Usage Report) data via Athena. Use 'cur_data' as the table name \u2014 it is auto-substituted with the configured CUR table. Always include partition filters (year, month) for performance. Returns query results synchronously (waits for completion).",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "query_string": {
+                            "type": "string",
+                            "description": "SQL query to execute. Use 'cur_data' as table name. Example: SELECT line_item_product_code, SUM(line_item_unblended_cost) FROM cur_data WHERE year='2026' AND month='02' GROUP BY 1 ORDER BY 2 DESC"
+                        },
+                        "max_results": {
+                            "type": "integer",
+                            "description": "Maximum rows to return (default: 100, max: 1000)"
+                        }
+                    },
+                    "required": [
+                        "query_string"
+                    ]
+                }
+            }
+        ]
+    },
+    "cost-optimization-hub": {
+        "handler": "handler.handler",
+        "runtime": "python3.12",
+        "timeout": 30,
+        "memory": 256,
+        "env_vars": {
+            "CROSS_ACCOUNT_ROLE_ARN_COH": "$CROSS_ACCOUNT_ROLE_ARN_COH"
+        },
+        "iam_actions": [
+            "cost-optimization-hub:ListEnrollmentStatuses",
+            "cost-optimization-hub:ListRecommendations",
+            "cost-optimization-hub:GetRecommendation",
+            "cost-optimization-hub:ListRecommendationSummaries"
+        ],
+        "tools": [
+            {
+                "name": "get_enrollment_status",
+                "description": "Check if Cost Optimization Hub is enabled for this account. Call this FIRST before other COH tools \u2014 if not enrolled, other calls will fail.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {}
+                }
+            },
+            {
+                "name": "list_recommendations",
+                "description": "List cost optimization recommendations (right-sizing, idle resources, Savings Plans, Reserved Instances). Sorted by estimated savings. Supports filtering by resource type, action type, region.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "resource_types": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Filter by resource types (e.g., Ec2Instance, LambdaFunction, EbsVolume)"
+                        },
+                        "action_types": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Filter by action types (e.g., Rightsize, Stop, Delete, MigrateToGraviton)"
+                        },
+                        "regions": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Filter by AWS regions"
+                        },
+                        "max_results": {
+                            "type": "integer",
+                            "description": "Max recommendations to return (default: 50, max: 100)"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "get_recommendation",
+                "description": "Get detailed information for a specific recommendation by ID.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "recommendation_id": {
+                            "type": "string",
+                            "description": "The recommendation ID to look up"
+                        }
+                    },
+                    "required": [
+                        "recommendation_id"
+                    ]
+                }
+            },
+            {
+                "name": "list_recommendation_summaries",
+                "description": "Get aggregated savings summaries grouped by a dimension (ResourceType, Region, AccountId, ActionType). Useful for high-level views like total savings by resource type.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "group_by": {
+                            "type": "string",
+                            "description": "Dimension to group by: ResourceType, Region, AccountId, ActionType, ImplementationEffort (default: ResourceType)"
+                        },
+                        "max_results": {
+                            "type": "integer",
+                            "description": "Max summaries to return (default: 50)"
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "health-events": {
+        "handler": "handler.handler",
+        "runtime": "python3.12",
+        "timeout": 30,
+        "memory": 256,
+        "iam_actions": [
+            "dynamodb:Scan",
+            "dynamodb:Query",
+            "dynamodb:GetItem"
+        ],
+        "needs_health_events": true,
+        "tools": [
+            {
+                "name": "get_health_events",
+                "description": "Query AWS health events with flexible filters. Supports filtering by account, service, status, region, risk level, event scope, and date range. Use days_back for relative date queries. Pass account_id to use the AccountTimeIndex (fast). Pass only time filters to use the CategoryTimeIndex (fast). Service-only queries scan. Returned events include narrative enrichment fields when available: impactSummary (one-sentence summary), remediationHint (operator action), affectedResourceTypes (normalized resource tokens) \u2014 prefer these over the raw description for concise user-facing responses.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "account_id": {
+                            "type": "string",
+                            "description": "Filter by AWS account ID"
+                        },
+                        "service": {
+                            "type": "string",
+                            "description": "Filter by AWS service (e.g., EC2, RDS, Lambda)"
+                        },
+                        "status": {
+                            "type": "string",
+                            "description": "Filter by status: open, closed, upcoming"
+                        },
+                        "region": {
+                            "type": "string",
+                            "description": "Filter by AWS region"
+                        },
+                        "risk_level": {
+                            "type": "string",
+                            "description": "Filter by risk: CRITICAL, HIGH, MEDIUM, LOW"
+                        },
+                        "event_scope": {
+                            "type": "string",
+                            "description": "Filter by scope: PUBLIC (widespread AWS issue), ACCOUNT_SPECIFIC (affects your resources), NONE"
+                        },
+                        "days_back": {
+                            "type": "integer",
+                            "description": "Events from last N days"
+                        },
+                        "start_date": {
+                            "type": "string",
+                            "description": "Start date (ISO format)"
+                        },
+                        "end_date": {
+                            "type": "string",
+                            "description": "End date (ISO format)"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": "Max events to return (default: 100)"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "get_events_by_account",
+                "description": "Get all health events for a specific AWS account ID.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "account_id": {
+                            "type": "string",
+                            "description": "AWS account ID (required)"
+                        },
+                        "days_back": {
+                            "type": "integer",
+                            "description": "Only events from last N days"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": "Max events (default: 100)"
+                        }
+                    },
+                    "required": [
+                        "account_id"
+                    ]
+                }
+            },
+            {
+                "name": "get_events_by_service",
+                "description": "Get health events for a specific AWS service.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "service": {
+                            "type": "string",
+                            "description": "AWS service name (required)"
+                        },
+                        "days_back": {
+                            "type": "integer",
+                            "description": "Only events from last N days"
+                        },
+                        "status": {
+                            "type": "string",
+                            "description": "Filter by status"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": "Max events (default: 100)"
+                        }
+                    },
+                    "required": [
+                        "service"
+                    ]
+                }
+            },
+            {
+                "name": "get_critical_events",
+                "description": "Get CRITICAL and HIGH risk health events, sorted by most recent.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "days_back": {
+                            "type": "integer",
+                            "description": "Look back N days (default: 30)"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": "Max events (default: 100)"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "get_recent_events",
+                "description": "Get most recent health events from the last N days, sorted by update time.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "days_back": {
+                            "type": "integer",
+                            "description": "Days to look back (default: 7)"
+                        },
+                        "status": {
+                            "type": "string",
+                            "description": "Filter by status"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": "Max events (default: 100)"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "get_event_summary",
+                "description": "Get summary counts of health events grouped by status, service, region, risk_level, event_scope, or category.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "group_by": {
+                            "type": "string",
+                            "description": "Group by: status, service, region, risk_level, event_scope, category (default: status)"
+                        },
+                        "days_back": {
+                            "type": "integer",
+                            "description": "Only include events from last N days"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "get_event_by_arn",
+                "description": "Get a single health event by its ARN.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "event_arn": {
+                            "type": "string",
+                            "description": "Full ARN of the health event (required)"
+                        },
+                        "account_id": {
+                            "type": "string",
+                            "description": "Account ID for faster lookup"
+                        }
+                    },
+                    "required": [
+                        "event_arn"
+                    ]
+                }
+            }
+        ]
+    },
+    "billing": {
+        "handler": "handler.handler",
+        "runtime": "python3.12",
+        "timeout": 30,
+        "memory": 256,
+        "iam_actions": [
+            "ce:GetAnomalies",
+            "budgets:DescribeBudgets",
+            "budgets:ViewBudget",
+            "sts:GetCallerIdentity",
+            "iam:ListAccountAliases",
+            "organizations:DescribeAccount"
+        ],
+        "tools": [
+            {
+                "name": "get_anomalies",
+                "description": "Get cost anomalies detected by AWS Cost Anomaly Detection. Returns unusual spending patterns with impact amounts.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "days_back": {
+                            "type": "integer",
+                            "description": "Number of days to look back for anomalies (default: 30)"
+                        },
+                        "max_results": {
+                            "type": "integer",
+                            "description": "Max anomalies to return (default: 20)"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "get_billing_alerts",
+                "description": "Get active AWS Budgets and their current status \u2014 shows budget limits, actual spend, forecasted spend, and utilization percentage.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {}
+                }
+            },
+            {
+                "name": "get_account_info",
+                "description": "Get basic account billing info \u2014 account ID, aliases, organization membership, and account name.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {}
+                }
+            }
+        ]
+    },
+    "pricing": {
+        "handler": "handler.handler",
+        "runtime": "python3.12",
+        "timeout": 30,
+        "memory": 256,
+        "iam_actions": [
+            "pricing:GetProducts",
+            "pricing:DescribeServices",
+            "pricing:GetAttributeValues"
+        ],
+        "tools": [
+            {
+                "name": "list_services",
+                "description": "List available AWS services in the pricing catalog. Returns service codes and their filterable attributes.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "max_results": {
+                            "type": "integer",
+                            "description": "Max services to return (default: 50)"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "get_service_pricing",
+                "description": "Get on-demand pricing for a specific AWS service. Use filters to narrow by region, instance type, OS, etc. Returns per-unit USD pricing.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "service_code": {
+                            "type": "string",
+                            "description": "AWS service code (e.g., AmazonEC2, AmazonRDS, AmazonS3, AWSLambda)"
+                        },
+                        "filters": {
+                            "type": "object",
+                            "description": "Key-value filters (e.g., {\"regionCode\": \"us-east-1\", \"instanceType\": \"m5.xlarge\", \"operatingSystem\": \"Linux\"})"
+                        },
+                        "max_results": {
+                            "type": "integer",
+                            "description": "Max products to return (default: 10)"
+                        }
+                    },
+                    "required": [
+                        "service_code"
+                    ]
+                }
+            },
+            {
+                "name": "get_attribute_values",
+                "description": "Get valid values for a service attribute. Use this to discover filter options before calling get_service_pricing.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "service_code": {
+                            "type": "string",
+                            "description": "AWS service code (e.g., AmazonEC2)"
+                        },
+                        "attribute_name": {
+                            "type": "string",
+                            "description": "Attribute to get values for (e.g., instanceType, regionCode, operatingSystem)"
+                        }
+                    },
+                    "required": [
+                        "service_code",
+                        "attribute_name"
+                    ]
+                }
+            }
+        ]
+    },
+    "network-resilience": {
+        "handler": "handler.handler",
+        "runtime": "python3.12",
+        "timeout": 60,
+        "memory": 512,
+        "env_vars": {
+            "DEFAULT_REGION": "$AWS_DEFAULT_REGION",
+            "CROSS_ACCOUNT_ROLE_ARN": "$CROSS_ACCOUNT_ROLE_ARN",
+            "MOCK_SCENARIO": ""
+        },
+        "iam_actions": [
+            "directconnect:DescribeConnections",
+            "directconnect:DescribeVirtualInterfaces",
+            "directconnect:DescribeDirectConnectGateways",
+            "directconnect:DescribeDirectConnectGatewayAssociations",
+            "directconnect:DescribeDirectConnectGatewayAssociationProposals",
+            "directconnect:DescribeLocations",
+            "directconnect:DescribeLags",
+            "ec2:DescribeVpcs",
+            "ec2:DescribeVpcPeeringConnections",
+            "ec2:DescribeVpnGateways",
+            "ec2:DescribeVpnConnections",
+            "ec2:DescribeTransitGateways",
+            "ec2:DescribeTransitGatewayAttachments",
+            "ec2:DescribeTransitGatewayPeeringAttachments",
+            "ec2:DescribeTransitGatewayRouteTables",
+            "ec2:DescribeRouteTables",
+            "ec2:DescribeCustomerGateways",
+            "ec2:SearchTransitGatewayRoutes",
+            "networkmanager:ListCoreNetworks",
+            "networkmanager:GetCoreNetwork",
+            "networkmanager:ListAttachments",
+            "networkmanager:ListPeerings",
+            "networkmanager:GetNetworkRoutes",
+            "cloudwatch:GetMetricData",
+            "cloudwatch:ListMetrics",
+            "health:DescribeEvents",
+            "health:DescribeEventDetails",
+            "health:DescribeAffectedEntities",
+            "organizations:DescribeAccount",
+            "iam:ListAccountAliases",
+            "ssm:GetParametersByPath",
+            "ssm:GetParameters",
+            "sts:GetCallerIdentity",
+            "sts:AssumeRole"
+        ],
+        "tools": [
+            {
+                "name": "get_today_date",
+                "description": "Return today's UTC date in YYYY-MM-DD format. Call this before date-sensitive queries to ground the agent in the current day.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {}
+                }
+            },
+            {
+                "name": "discover_dx_topology",
+                "description": "Discover the caller's AWS Direct Connect topology across all reachable regions. Returns a TopologyData JSON (DX connections, virtual interfaces, DX gateways, Transit Gateways, VPCs, VPNs, Cloud WAN) plus a fetchErrors list describing any partial API failures. Idempotent within a conversation \u2014 call ONCE per session unless the user explicitly asks to refresh.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "default_region": {
+                            "type": "string",
+                            "description": "Home region to seed multi-region discovery from. Defaults to the Lambda's AWS_REGION."
+                        },
+                        "mock_scenario": {
+                            "type": "string",
+                            "description": "Optional: return a fixture topology instead of calling AWS. One of: noResiliency, devTest, high, maximum, crossAccount, cloudWan. Useful for demos without live credentials."
+                        }
+                    }
+                }
+            },
+            {
+                "name": "assess_dx_resiliency",
+                "description": "Run the 5 resiliency rules + 17 best-practice checks + 2 SLA-precondition attestations against a topology. Returns {topology, assessment} \u2014 the topology that was assessed PLUS the CombinedAssessment (perDxGateway, global, resiliency, bestPractice). The visualizer uses both. If topology is not passed, the tool fetches it first. Call after discover_dx_topology (or instead of it) when the user asks about resiliency, best practices, or recommendations.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "topology": {
+                            "type": "object",
+                            "description": "Optional TopologyData (as returned by discover_dx_topology). Omit to fetch live or pass mock_scenario."
+                        },
+                        "targets": {
+                            "type": "object",
+                            "description": "Target tier. Pass a string 'high' or 'maximum' to apply to every DXGW, OR an object keyed by DXGW ID mapping specific targets (missing keys default to 'high'). Defaults to 'high'. AgentCore gateway schema doesn't support oneOf \u2014 the handler accepts either shape."
+                        },
+                        "default_region": {
+                            "type": "string",
+                            "description": "Used only when topology is not passed."
+                        },
+                        "mock_scenario": {
+                            "type": "string",
+                            "description": "Used only when topology is not passed. One of: noResiliency, devTest, high, maximum, crossAccount, cloudWan."
+                        }
+                    }
+                }
+            },
+            {
+                "name": "get_recommendation_details",
+                "description": "Re-run the assessment and return a single recommendation by ID (title, description, severity, ghost-node specs). Cheaper than re-sending the full assessment when the user asks about one specific recommendation.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "recommendation_id": {
+                            "type": "string",
+                            "description": "ID from a prior assess_dx_resiliency result (e.g., 'bp-bgp-route-limit' or 'rec-single-dx-location-dxgw-001')."
+                        },
+                        "topology": {
+                            "type": "object",
+                            "description": "Optional cached topology. Omit to re-fetch."
+                        },
+                        "targets": {
+                            "type": "object",
+                            "description": "Same semantics as assess_dx_resiliency.targets \u2014 pass a string 'high'/'maximum' OR an object keyed by DXGW ID."
+                        },
+                        "default_region": {
+                            "type": "string"
+                        },
+                        "mock_scenario": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "recommendation_id"
+                    ]
+                }
+            },
+            {
+                "name": "get_dx_pricing",
+                "description": "Look up live AWS Direct Connect port pricing + data-transfer rate for a region and port speed via the AWS Pricing API. Returns monthly cost per connection, total for num_connections, and USD/GB outbound data-transfer rate. Use this only for DX-specific pricing \u2014 for generic AWS service pricing, defer to the pricing-agent sibling.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "region": {
+                            "type": "string",
+                            "description": "AWS region code (e.g., us-east-1, eu-west-1)."
+                        },
+                        "port_speed": {
+                            "type": "string",
+                            "description": "DX port speed. Must be one of: 1Gbps, 10Gbps, 100Gbps."
+                        },
+                        "num_connections": {
+                            "type": "integer",
+                            "description": "Number of connections to price (default 1)."
+                        }
+                    },
+                    "required": [
+                        "region",
+                        "port_speed"
+                    ]
+                }
+            },
+            {
+                "name": "estimate_upgrade_cost",
+                "description": "Estimate the additional monthly cost to move the topology from its current tier to 'high' or 'maximum'. Combines topology shape (location/device gap) with live DX pricing. Rough budgeting estimate only \u2014 excludes data transfer, cross-connect fees, and partner pricing nuances.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "target_tier": {
+                            "type": "string",
+                            "description": "Target resiliency tier. One of: 'high', 'maximum'. Defaults to 'high'."
+                        },
+                        "port_speed": {
+                            "type": "string",
+                            "description": "Port speed to use for cost modeling. One of: 1Gbps, 10Gbps, 100Gbps. Default 10Gbps."
+                        },
+                        "region": {
+                            "type": "string",
+                            "description": "Region for pricing lookups. Inferred from topology connections if omitted."
+                        },
+                        "topology": {
+                            "type": "object",
+                            "description": "Optional cached topology."
+                        },
+                        "default_region": {
+                            "type": "string"
+                        },
+                        "mock_scenario": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "tag-governance": {
+        "handler": "handler.handler",
+        "runtime": "python3.12",
+        "timeout": 60,
+        "memory": 512,
+        "env_vars": {
+            "CROSS_ACCOUNT_ROLE_ARN_TAG_GOVERNANCE": "$CROSS_ACCOUNT_ROLE_ARN_TAG_GOVERNANCE"
+        },
+        "iam_actions": [
+            "tag:GetResources",
+            "tag:GetTagKeys",
+            "tag:GetTagValues",
+            "tag:GetComplianceSummary",
+            "ce:ListCostAllocationTags",
+            "organizations:DescribeEffectivePolicy",
+            "resource-explorer-2:ListIndexes",
+            "resource-explorer-2:Search",
+            "sts:GetCallerIdentity"
+        ],
+        "tools": [
+            {
+                "name": "get_required_tags",
+                "description": "Resolve the required-tag policy from either the caller's input or the AWS Organizations Tag Policy attached to the current account. Returns {required_tag_keys, allowed_values, case_sensitive, source}. If the caller supplies required_tags, uses those; otherwise reads the Organizations Tag Policy. Returns an error with a starter-tag hint if neither source is available.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "required_tags": {
+                            "type": "array",
+                            "description": "Optional caller-supplied list of required tags. Either a flat list of key strings (e.g. ['Environment', 'Owner']) or a list of objects with per-key allowed values (e.g. [{'key': 'Environment', 'allowed_values': ['prod', 'dev']}]). Omit to read from AWS Organizations Tag Policy."
+                        },
+                        "allowed_values": {
+                            "type": "object",
+                            "description": "Optional map of tag_key -> list of permitted values. Overrides any embedded allowed_values in the required_tags parameter."
+                        }
+                    }
+                }
+            },
+            {
+                "name": "list_tag_keys_in_use",
+                "description": "Return every tag key currently applied to at least one resource in the caller's account and region. Use this when the operator has no formal policy and wants to see what they're already tagging with before writing one. Output can seed a required_tags list for check_tag_compliance.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "region": {
+                            "type": "string",
+                            "description": "Optional AWS region to query. Omit to use the Lambda's default region."
+                        }
+                    }
+                }
+            },
+            {
+                "name": "check_tag_compliance",
+                "description": "Scan AWS resources and report tag compliance. Two evaluation modes: (1) In-Python classifier (default) uses AWS Resource Explorer as the inventory source and requires a resolved required-tag policy (caller-supplied or Organizations Tag Policy). (2) AWS server-side evaluation (set use_aws_evaluation=true) uses ResourceGroupsTaggingAPI GetResources with IncludeComplianceDetails and requires an attached AWS Tag Policy; caller-supplied required_tags is ignored in this mode. Returns summary counts (compliant/non_compliant/compliance_pct in default mode), breakdowns by violation type and by required tag, top-10 worst-offending resource types, accounts, and regions, a capped list of non-compliant resources with their specific violations, and a complete remediation_buckets array (aggregated counts per (account, region, resource_type, tag_key, violation_type)) that survives the max_resources cap and is the preferred input to get_remediation_guidance. By default excludes system-managed resource types (SageMaker trial components, default parameter groups, etc.) that operators can't practically tag. If Resource Explorer is not indexed and default mode is requested, returns a clear 'resource_explorer_not_indexed' status.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "required_tags": {
+                            "type": "array",
+                            "description": "Optional: same format as get_required_tags. Omit to use the Organizations Tag Policy. Ignored when use_aws_evaluation=true."
+                        },
+                        "allowed_values": {
+                            "type": "object",
+                            "description": "Optional tag_key -> allowed values map. Ignored when use_aws_evaluation=true."
+                        },
+                        "use_aws_evaluation": {
+                            "type": "boolean",
+                            "description": "Set to true to use AWS server-side evaluation via ResourceGroupsTaggingAPI GetResources(IncludeComplianceDetails=True). Requires an attached AWS Tag Policy. Default false uses the in-Python classifier with Resource Explorer."
+                        },
+                        "regions": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Optional list of regions to scan when use_aws_evaluation=true. Omit to use the Lambda's default region. Ignored in default mode (Resource Explorer is cross-region via its aggregator)."
+                        },
+                        "resource_types": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Optional filter, e.g. ['ec2:instance', 's3:bucket']. Omit to scan all resource types."
+                        },
+                        "max_resources": {
+                            "type": "integer",
+                            "description": "Max non-compliant resource entries to include in the detail list (default 25, cap 1000). Summary counts are always complete."
+                        },
+                        "include_system_managed": {
+                            "type": "boolean",
+                            "description": "Set to true to include system-managed resource types (SageMaker experiment trial components, default memorydb/rds parameter groups, AWS-managed SSM documents, etc.) that are normally excluded as unactionable noise. Default false."
+                        }
+                    }
+                }
+            },
+            {
+                "name": "get_org_tag_compliance_summary",
+                "description": "Aggregated tag-compliance counts via ResourceGroupsTaggingAPI GetComplianceSummary. Returns counts only (no ARNs, no tags) grouped by TARGET_ID, REGION, or RESOURCE_TYPE \u2014 for dashboards and executive rollups. Requires an attached AWS Tag Policy (NoTagPoliciesAttached error otherwise) and management-account access. IMPORTANT: these numbers are only as complete as the Tag Policy configuration \u2014 if the policy doesn't cover all required tags / all resource types / use the enforced_for reporting clause, real non-compliance will be undercounted. The response includes an accuracy_caveat field that the calling agent MUST surface to the user. For per-resource drill-down use check_tag_compliance instead.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "group_by": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Dimensions to group by: TARGET_ID (account), REGION, RESOURCE_TYPE. Default ['TARGET_ID']."
+                        },
+                        "account_ids": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Optional filter by AWS account IDs."
+                        },
+                        "regions": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Optional filter by AWS regions."
+                        },
+                        "resource_types": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Optional filter by resource type."
+                        },
+                        "tag_keys": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Optional filter by tag keys."
+                        }
+                    }
+                }
+            },
+            {
+                "name": "find_untagged_resources",
+                "description": "Find resources with zero tags via Resource Explorer 'tag:none' query. GetResources explicitly does NOT return zero-tagged resources, so this is the only way to surface them. Paginates up to 1000 results per call (Resource Explorer's server-side cap). When a single resource_type or region is passed, it is pushed into the query for server-side filtering so the cap is less likely to bite. Returns api_limit_reached=true with a hint when the 1000 ceiling is hit. Degrades gracefully with 'resource_explorer_not_indexed' status if the aggregator index isn't configured.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "account_ids": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Optional filter by AWS account IDs (applied post-query)."
+                        },
+                        "regions": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Optional filter by AWS regions. A single region is pushed into the Resource Explorer query server-side; multiple regions are filtered post-query. Use 'Global' for global services (IAM, CloudFront, Route 53)."
+                        },
+                        "resource_types": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description": "Optional filter by resource type (e.g. 'iam:role'). A single value is pushed into the Resource Explorer query server-side; multiple values are filtered post-query."
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": "Max resources to return (default 1000, capped at 1000 by Resource Explorer's per-query ceiling)."
+                        }
+                    }
+                }
+            },
+            {
+                "name": "list_cost_allocation_tag_status",
+                "description": "List cost-allocation tag activation status via Cost Explorer ListCostAllocationTags. A tag being policy-compliant does NOT mean it's activated for billing \u2014 activation is a separate payer-only action. Surfaces the gap so operators can see which compliant tags are actually usable in Cost Explorer and CUR. Payer-only API; returns a clear error if not run from the management (payer) account.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "type": "string",
+                            "description": "Optional filter: 'Active' or 'Inactive'. Omit for all."
+                        },
+                        "type": {
+                            "type": "string",
+                            "description": "Optional filter: 'UserDefined' or 'AWSGenerated'. Omit for all."
+                        }
+                    }
+                }
+            },
+            {
+                "name": "get_remediation_guidance",
+                "description": "Generate AWS Resource Explorer deep-links to bulk-fix non-compliant resources. Prefer passing remediation_buckets from the check_tag_compliance response (aggregated, complete regardless of max_resources) \u2014 this guarantees priorities are correct. Falls back to non_compliant_resources (per-resource, may be truncated). Emits one link per (account_id, region, resource_type, tag_key, violation_type) bucket, pre-filtered to exactly those resources. Links are ordered by bucket size (most resources first) so the highest-impact fixes appear first, and are capped at max_links (default 20) with a links_truncated flag when more buckets exist. Operator workflow: open link, select resources, Actions > Manage tags > Add/Edit tag. Commercial AWS partition only.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "remediation_buckets": {
+                            "type": "array",
+                            "description": "Preferred input: the remediation_buckets array from check_tag_compliance. Each item is {tag_key, violation_type, account_id, region, resource_type, count}. Aggregated server-side, reflects the full scan even when non_compliant_resources is truncated."
+                        },
+                        "non_compliant_resources": {
+                            "type": "array",
+                            "description": "Fallback input when remediation_buckets is not available. Array of non-compliant resource entries as returned by check_tag_compliance. May be truncated by max_resources, so bucket priorities could be misleading if the scan was large."
+                        },
+                        "scan_method": {
+                            "type": "string",
+                            "description": "Either 'resource_explorer' or 'aws_server_side_evaluation'. Used to add a caveat note to the summary (AWS-evaluated scans don't return expected_values for invalid_value violations, so invalid_value links let you inspect current values rather than pre-filter by them)."
+                        },
+                        "max_links": {
+                            "type": "integer",
+                            "description": "Maximum number of remediation links to return (default 20). Links are ordered by bucket size descending, so the top-impact buckets are always included. When truncated, the response includes links_truncated=true and links_dropped with the count of buckets not shown."
+                        }
+                    }
+                }
+            }
+        ]
+    }
+}
