@@ -484,3 +484,57 @@ class TestGetRemediationGuidance:
         assert len(result["links"]) == 2
         assert result["links_truncated"] is True
         assert result["links_dropped"] == 3
+
+    def test_self_fetches_compliance_when_no_input(self, monkeypatch):
+        """No buckets and no resources → runs check_tag_compliance internally."""
+        called = {}
+
+        def fake_compliance(event):
+            called["event"] = event
+            return {
+                "scan_method": "resource_explorer",
+                "remediation_buckets": [
+                    {
+                        "tag_key": "Environment",
+                        "violation_type": "missing_tag",
+                        "account_id": "111",
+                        "region": "us-east-1",
+                        "resource_type": "ec2:instance",
+                        "count": 7,
+                    },
+                ],
+            }
+
+        monkeypatch.setattr(handler, "handle_check_tag_compliance", fake_compliance)
+
+        result = handler.handle_get_remediation_guidance(
+            {"required_tags": ["Environment"], "resource_types": ["ec2:instance"]}
+        )
+        # The compliance scan received the same event (params threaded through).
+        assert called["event"]["required_tags"] == ["Environment"]
+        assert called["event"]["resource_types"] == ["ec2:instance"]
+        # Regenerated bucket produced a link.
+        assert len(result["links"]) == 1
+        assert result["links"][0]["resource_count"] == 7
+
+    def test_self_fetch_propagates_no_policy_error(self, monkeypatch):
+        """A non-success compliance response is surfaced verbatim, not swallowed."""
+        monkeypatch.setattr(
+            handler,
+            "handle_check_tag_compliance",
+            lambda event: handler._NO_POLICY_FOUND_ERROR,
+        )
+        result = handler.handle_get_remediation_guidance({})
+        assert result == handler._NO_POLICY_FOUND_ERROR
+        assert "links" not in result
+
+    def test_self_fetch_all_compliant_returns_no_links(self, monkeypatch):
+        """Self-fetch yielding zero buckets falls through to the clean summary."""
+        monkeypatch.setattr(
+            handler,
+            "handle_check_tag_compliance",
+            lambda event: {"scan_method": "resource_explorer", "remediation_buckets": []},
+        )
+        result = handler.handle_get_remediation_guidance({})
+        assert result["links"] == []
+        assert "compliant" in result["summary"].lower()

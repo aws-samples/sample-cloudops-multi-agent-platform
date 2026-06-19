@@ -237,6 +237,9 @@ _ANSWER_TO_TFVAR = {
     "MODEL_DEFAULT_ID":                      "bedrock_model_id",
     "MODEL_HEALTH_ENRICHMENT_ID":            "health_enrichment_model_id",
     "CROSS_ACCOUNT_HEALTH_ROLE_ARN":         "health_events_cross_account_role_arn",
+    # Imported from SSM as GATEWAY_JWT_VALIDATION_CLAIM (path gateway/jwt_validation_claim);
+    # Terraform expects the root var name jwt_validation_claim.
+    "GATEWAY_JWT_VALIDATION_CLAIM":          "jwt_validation_claim",
 }
 for ans_key, tf_key in _ANSWER_TO_TFVAR.items():
     if ans_key in answers:

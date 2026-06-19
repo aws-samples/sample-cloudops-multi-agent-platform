@@ -38,6 +38,7 @@ locals {
     "idp/client_secret"                          = { type = "SecureString", value = var.custom_idp_client_secret }
     "app/url"                                    = { type = "String", value = var.app_url }
     "gateway/auth"                               = { type = "String", value = var.gateway_auth }
+    "gateway/jwt_validation_claim"               = { type = "String", value = var.jwt_validation_claim }
     "cross_account/default_role_arn"             = { type = "String", value = var.cross_account_role_arn }
     "cross_account/coh_role_arn"                 = { type = "String", value = var.cross_account_role_arn_coh }
     "cross_account/tag_governance_role_arn"      = { type = "String", value = var.cross_account_role_arn_tag_governance }

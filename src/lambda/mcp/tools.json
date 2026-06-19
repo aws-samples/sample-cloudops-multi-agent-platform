@@ -16,7 +16,7 @@
         "tools": [
             {
                 "name": "get_cost_and_usage",
-                "description": "Retrieve AWS cost and usage data with optional filtering and grouping. Returns cost breakdown by time period with grand total. Use get_today_date first to determine correct date ranges.",
+                "description": "Retrieve AWS cost and usage data with optional filtering and grouping. Returns cost breakdown by time period with grand total. Use get_today_date first to determine correct date ranges. Use the MINIMUM calls needed: for a simple spend question, ONE monthly call with no group_by. Add group_by (SERVICE/REGION) only for a breakdown; use DAILY only for trends. Call get_today_date first to ground relative dates. Do not run extra queries the user didn't ask for.",
                 "input_schema": {
                     "type": "object",
                     "properties": {
@@ -48,7 +48,61 @@
                         },
                         "filter": {
                             "type": "object",
-                            "description": "Cost Explorer filter expression (optional)"
+                            "description": "Cost Explorer filter Expression (optional). A nested boolean of Dimensions/Tags/CostCategories with And/Or/Not. Example: {\"Dimensions\": {\"Key\": \"SERVICE\", \"Values\": [\"Amazon Elastic Compute Cloud - Compute\"]}}. Common keys: SERVICE, REGION, LINKED_ACCOUNT, USAGE_TYPE, RECORD_TYPE.",
+                            "properties": {
+                                "Dimensions": {
+                                    "type": "object",
+                                    "description": "Filter by a dimension.",
+                                    "properties": {
+                                        "Key": {
+                                            "type": "string",
+                                            "description": "e.g. SERVICE, REGION, LINKED_ACCOUNT, USAGE_TYPE"
+                                        },
+                                        "Values": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                },
+                                "Tags": {
+                                    "type": "object",
+                                    "description": "Filter by a cost-allocation tag.",
+                                    "properties": {
+                                        "Key": {
+                                            "type": "string"
+                                        },
+                                        "Values": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                },
+                                "And": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {}
+                                    },
+                                    "description": "AND of sub-expressions."
+                                },
+                                "Or": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {}
+                                    },
+                                    "description": "OR of sub-expressions."
+                                },
+                                "Not": {
+                                    "type": "object",
+                                    "description": "Negated sub-expression.",
+                                    "properties": {}
+                                }
+                            }
                         }
                     },
                     "required": [
@@ -205,7 +259,7 @@
         "tools": [
             {
                 "name": "start_query_execution",
-                "description": "Execute a SQL query on CUR (Cost and Usage Report) data via Athena. Use 'cur_data' as the table name \u2014 it is auto-substituted with the configured CUR table. Always include partition filters (year, month) for performance. Returns query results synchronously (waits for completion).",
+                "description": "Execute SQL on CUR (Cost and Usage Report) 2.0 data via Athena. Use 'cur_data' as the table name (auto-substituted). ALWAYS include partition filters for performance: billing_period = 'YYYY-MM' is the ONLY partition column (string). Date columns are TIMESTAMP type \u2014 use date_format(bill_billing_period_start_date, '%Y-%m') = 'YYYY-MM' for monthly, or line_item_usage_start_date >= TIMESTAMP 'YYYY-MM-DD HH:MM:SS' for daily. NEVER use LIMIT (use max_results). Key fields: line_item_unblended_cost, line_item_usage_account_id, line_item_product_code, line_item_line_item_type, line_item_resource_id, resource_tags (cost-allocation tags: element_at(resource_tags, 'user_<tag>')). For amortized cost, CASE on line_item_line_item_type: SavingsPlanCoveredUsage -> savings_plan_savings_plan_effective_cost; DiscountedUsage -> reservation_effective_cost; RIFee -> reservation_unused_amortized_upfront_fee_for_billing_period + reservation_unused_recurring_fee; else line_item_unblended_cost. Exclude Marketplace with bill_billing_entity = 'AWS'; exclude Tax/Credit/Refund via line_item_line_item_type NOT IN (...).",
                 "input_schema": {
                     "type": "object",
                     "properties": {
@@ -592,7 +646,21 @@
                         },
                         "filters": {
                             "type": "object",
-                            "description": "Key-value filters (e.g., {\"regionCode\": \"us-east-1\", \"instanceType\": \"m5.xlarge\", \"operatingSystem\": \"Linux\"})"
+                            "description": "Key-value attribute filters as a flat {string: string} map. Common keys shown below; any AWS pricing attribute is accepted. Example: {\"regionCode\": \"us-east-1\", \"instanceType\": \"m5.xlarge\", \"operatingSystem\": \"Linux\"}.",
+                            "properties": {
+                                "regionCode": {
+                                    "type": "string",
+                                    "description": "e.g. us-east-1"
+                                },
+                                "instanceType": {
+                                    "type": "string",
+                                    "description": "e.g. m5.xlarge"
+                                },
+                                "operatingSystem": {
+                                    "type": "string",
+                                    "description": "e.g. Linux, Windows"
+                                }
+                            }
                         },
                         "max_results": {
                             "type": "integer",
@@ -684,7 +752,7 @@
             },
             {
                 "name": "discover_dx_topology",
-                "description": "Discover the caller's AWS Direct Connect topology across all reachable regions. Returns a TopologyData JSON (DX connections, virtual interfaces, DX gateways, Transit Gateways, VPCs, VPNs, Cloud WAN) plus a fetchErrors list describing any partial API failures. Idempotent within a conversation \u2014 call ONCE per session unless the user explicitly asks to refresh.",
+                "description": "Discover the caller's AWS Direct Connect topology across all reachable regions. Returns a TopologyData JSON (DX connections, virtual interfaces, DX gateways, Transit Gateways, VPCs, VPNs, Cloud WAN) plus a fetchErrors list describing any partial API failures. Idempotent within a conversation \u2014 call ONCE per session unless the user explicitly asks to refresh. For a credential-free demo, pass mock_scenario (noResiliency | devTest | high | maximum | crossAccount | cloudWan) to return a fixture topology instantly.",
                 "input_schema": {
                     "type": "object",
                     "properties": {
@@ -701,17 +769,19 @@
             },
             {
                 "name": "assess_dx_resiliency",
-                "description": "Run the 5 resiliency rules + 17 best-practice checks + 2 SLA-precondition attestations against a topology. Returns {topology, assessment} \u2014 the topology that was assessed PLUS the CombinedAssessment (perDxGateway, global, resiliency, bestPractice). The visualizer uses both. If topology is not passed, the tool fetches it first. Call after discover_dx_topology (or instead of it) when the user asks about resiliency, best practices, or recommendations.",
+                "description": "Run the 5 resiliency rules + 17 best-practice checks + 2 SLA-precondition attestations against a topology. Returns {topology, assessment} \u2014 the topology that was assessed PLUS the CombinedAssessment (perDxGateway, global, resiliency, bestPractice). The visualizer uses both. If topology is not passed, the tool fetches it first. Call after discover_dx_topology (or instead of it) when the user asks about resiliency, best practices, or recommendations. Resiliency is reported PER DX GATEWAY as a tier (none/devtest/high/maximum) \u2014 there is NO single account-wide score; never invent one. Self-contained: omit topology to fetch live, or pass mock_scenario for a deterministic demo. NEVER fabricate SLA %, tier names, or BGP limits.",
                 "input_schema": {
                     "type": "object",
                     "properties": {
                         "topology": {
                             "type": "object",
-                            "description": "Optional TopologyData (as returned by discover_dx_topology). Omit to fetch live or pass mock_scenario."
+                            "description": "Optional TopologyData (as returned by discover_dx_topology). Omit to fetch live or pass mock_scenario.",
+                            "properties": {}
                         },
                         "targets": {
                             "type": "object",
-                            "description": "Target tier. Pass a string 'high' or 'maximum' to apply to every DXGW, OR an object keyed by DXGW ID mapping specific targets (missing keys default to 'high'). Defaults to 'high'. AgentCore gateway schema doesn't support oneOf \u2014 the handler accepts either shape."
+                            "description": "Target tier. Pass a string 'high' or 'maximum' to apply to every DXGW, OR an object keyed by DXGW ID mapping specific targets (missing keys default to 'high'). Defaults to 'high'. AgentCore gateway schema doesn't support oneOf \u2014 the handler accepts either shape.",
+                            "properties": {}
                         },
                         "default_region": {
                             "type": "string",
@@ -736,11 +806,13 @@
                         },
                         "topology": {
                             "type": "object",
-                            "description": "Optional cached topology. Omit to re-fetch."
+                            "description": "Optional cached topology. Omit to re-fetch.",
+                            "properties": {}
                         },
                         "targets": {
                             "type": "object",
-                            "description": "Same semantics as assess_dx_resiliency.targets \u2014 pass a string 'high'/'maximum' OR an object keyed by DXGW ID."
+                            "description": "Same semantics as assess_dx_resiliency.targets \u2014 pass a string 'high'/'maximum' OR an object keyed by DXGW ID.",
+                            "properties": {}
                         },
                         "default_region": {
                             "type": "string"
@@ -799,7 +871,8 @@
                         },
                         "topology": {
                             "type": "object",
-                            "description": "Optional cached topology."
+                            "description": "Optional cached topology.",
+                            "properties": {}
                         },
                         "default_region": {
                             "type": "string"
@@ -840,11 +913,15 @@
                     "properties": {
                         "required_tags": {
                             "type": "array",
-                            "description": "Optional caller-supplied list of required tags. Either a flat list of key strings (e.g. ['Environment', 'Owner']) or a list of objects with per-key allowed values (e.g. [{'key': 'Environment', 'allowed_values': ['prod', 'dev']}]). Omit to read from AWS Organizations Tag Policy."
+                            "description": "Optional caller-supplied list of required tags. Either a flat list of key strings (e.g. ['Environment', 'Owner']) or a list of objects with per-key allowed values (e.g. [{'key': 'Environment', 'allowed_values': ['prod', 'dev']}]). Omit to read from AWS Organizations Tag Policy. Items are tag-key strings; for per-key allowed values pass the allowed_values map instead.",
+                            "items": {
+                                "type": "string"
+                            }
                         },
                         "allowed_values": {
                             "type": "object",
-                            "description": "Optional map of tag_key -> list of permitted values. Overrides any embedded allowed_values in the required_tags parameter."
+                            "description": "Optional map of tag_key -> list of permitted values. Overrides any embedded allowed_values in the required_tags parameter. Shape: an object mapping each tag key to an array of permitted string values, e.g. {\"Environment\": [\"prod\", \"dev\", \"staging\"]}.",
+                            "properties": {}
                         }
                     }
                 }
@@ -864,17 +941,21 @@
             },
             {
                 "name": "check_tag_compliance",
-                "description": "Scan AWS resources and report tag compliance. Two evaluation modes: (1) In-Python classifier (default) uses AWS Resource Explorer as the inventory source and requires a resolved required-tag policy (caller-supplied or Organizations Tag Policy). (2) AWS server-side evaluation (set use_aws_evaluation=true) uses ResourceGroupsTaggingAPI GetResources with IncludeComplianceDetails and requires an attached AWS Tag Policy; caller-supplied required_tags is ignored in this mode. Returns summary counts (compliant/non_compliant/compliance_pct in default mode), breakdowns by violation type and by required tag, top-10 worst-offending resource types, accounts, and regions, a capped list of non-compliant resources with their specific violations, and a complete remediation_buckets array (aggregated counts per (account, region, resource_type, tag_key, violation_type)) that survives the max_resources cap and is the preferred input to get_remediation_guidance. By default excludes system-managed resource types (SageMaker trial components, default parameter groups, etc.) that operators can't practically tag. If Resource Explorer is not indexed and default mode is requested, returns a clear 'resource_explorer_not_indexed' status.",
+                "description": "Scan AWS resources and report tag compliance. Two evaluation modes: (1) In-Python classifier (default) uses AWS Resource Explorer as the inventory source and requires a resolved required-tag policy (caller-supplied or Organizations Tag Policy). (2) AWS server-side evaluation (set use_aws_evaluation=true) uses ResourceGroupsTaggingAPI GetResources with IncludeComplianceDetails and requires an attached AWS Tag Policy; caller-supplied required_tags is ignored in this mode. Returns summary counts (compliant/non_compliant/compliance_pct in default mode), breakdowns by violation type and by required tag, top-10 worst-offending resource types, accounts, and regions, a capped list of non-compliant resources with their specific violations, and a complete remediation_buckets array (aggregated counts per (account, region, resource_type, tag_key, violation_type)) that survives the max_resources cap and is the preferred input to get_remediation_guidance. By default excludes system-managed resource types (SageMaker trial components, default parameter groups, etc.) that operators can't practically tag. If Resource Explorer is not indexed and default mode is requested, returns a clear 'resource_explorer_not_indexed' status. SOURCE OF TRUTH: required tags come ONLY from (1) an attached AWS Organizations Tag Policy (used when required_tags is omitted) or (2) tags the user explicitly names (pass via required_tags). NEVER invent tag keys; 'Environment'/'Owner'/'Project' are illustrative, not defaults. If no policy is attached and the user named no tags, ask which tags to check rather than guessing.",
                 "input_schema": {
                     "type": "object",
                     "properties": {
                         "required_tags": {
                             "type": "array",
-                            "description": "Optional: same format as get_required_tags. Omit to use the Organizations Tag Policy. Ignored when use_aws_evaluation=true."
+                            "description": "Optional: same format as get_required_tags. Omit to use the Organizations Tag Policy. Ignored when use_aws_evaluation=true. Items are tag-key strings; for per-key allowed values pass the allowed_values map instead.",
+                            "items": {
+                                "type": "string"
+                            }
                         },
                         "allowed_values": {
                             "type": "object",
-                            "description": "Optional tag_key -> allowed values map. Ignored when use_aws_evaluation=true."
+                            "description": "Optional tag_key -> allowed values map. Ignored when use_aws_evaluation=true. Shape: an object mapping each tag key to an array of permitted string values, e.g. {\"Environment\": [\"prod\", \"dev\", \"staging\"]}.",
+                            "properties": {}
                         },
                         "use_aws_evaluation": {
                             "type": "boolean",
@@ -1002,17 +1083,45 @@
             },
             {
                 "name": "get_remediation_guidance",
-                "description": "Generate AWS Resource Explorer deep-links to bulk-fix non-compliant resources. Prefer passing remediation_buckets from the check_tag_compliance response (aggregated, complete regardless of max_resources) \u2014 this guarantees priorities are correct. Falls back to non_compliant_resources (per-resource, may be truncated). Emits one link per (account_id, region, resource_type, tag_key, violation_type) bucket, pre-filtered to exactly those resources. Links are ordered by bucket size (most resources first) so the highest-impact fixes appear first, and are capped at max_links (default 20) with a links_truncated flag when more buckets exist. Operator workflow: open link, select resources, Actions > Manage tags > Add/Edit tag. Commercial AWS partition only.",
+                "description": "Generate AWS Resource Explorer deep-links to bulk-fix non-compliant resources. Prefer passing remediation_buckets from the check_tag_compliance response (aggregated, complete regardless of max_resources) \u2014 this guarantees priorities are correct. Falls back to non_compliant_resources (per-resource, may be truncated). Emits one link per (account_id, region, resource_type, tag_key, violation_type) bucket, pre-filtered to exactly those resources. Links are ordered by bucket size (most resources first) so the highest-impact fixes appear first, and are capped at max_links (default 20) with a links_truncated flag when more buckets exist. Operator workflow: open link, select resources, Actions > Manage tags > Add/Edit tag. Commercial AWS partition only. SELF-CONTAINED: if you pass NEITHER remediation_buckets NOR non_compliant_resources, this tool runs check_tag_compliance itself (honoring any required_tags / resource_types / regions / use_aws_evaluation you pass) and generates the links directly \u2014 so you can call it standalone without threading a prior scan's output.",
                 "input_schema": {
                     "type": "object",
                     "properties": {
                         "remediation_buckets": {
                             "type": "array",
-                            "description": "Preferred input: the remediation_buckets array from check_tag_compliance. Each item is {tag_key, violation_type, account_id, region, resource_type, count}. Aggregated server-side, reflects the full scan even when non_compliant_resources is truncated."
+                            "description": "Preferred input: the remediation_buckets array from check_tag_compliance. Each item is {tag_key, violation_type, account_id, region, resource_type, count}. Aggregated server-side, reflects the full scan even when non_compliant_resources is truncated.",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "tag_key": {
+                                        "type": "string"
+                                    },
+                                    "violation_type": {
+                                        "type": "string",
+                                        "description": "missing_tag or invalid_value"
+                                    },
+                                    "account_id": {
+                                        "type": "string"
+                                    },
+                                    "region": {
+                                        "type": "string"
+                                    },
+                                    "resource_type": {
+                                        "type": "string"
+                                    },
+                                    "count": {
+                                        "type": "integer"
+                                    }
+                                }
+                            }
                         },
                         "non_compliant_resources": {
                             "type": "array",
-                            "description": "Fallback input when remediation_buckets is not available. Array of non-compliant resource entries as returned by check_tag_compliance. May be truncated by max_resources, so bucket priorities could be misleading if the scan was large."
+                            "description": "Fallback input when remediation_buckets is not available. Array of non-compliant resource entries as returned by check_tag_compliance. May be truncated by max_resources, so bucket priorities could be misleading if the scan was large.",
+                            "items": {
+                                "type": "object",
+                                "properties": {}
+                            }
                         },
                         "scan_method": {
                             "type": "string",
