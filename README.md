@@ -288,6 +288,7 @@ docs/
   architecture.md               # Platform internals
 skills/
   developer-guide/SKILL.md      # Adding agents / tools / collectors (interactive)
+  eks-operation-review/SKILL.md # EKS operational excellence assessment (10 areas, rated report)
   agents/                       # Per-leaf-agent references (deploy modes, data model, gotchas)
     README.md                   # When to add a file + section template
     cost-operations.md          # Cost Explorer / CUR / COH reference
@@ -391,6 +392,7 @@ Skills provide the platform's analytical capabilities as portable workflows that
 | `/finops-analysis` | "what are my top costs?" | Cost breakdown, trends, forecasts, savings |
 | `/health-events-digest` | "any critical health events?" | Health event digest with risk scoring |
 | `/tag-governance-assessment` | "how's my tag compliance?" | Tag compliance scoring + remediation links |
+| `/eks-operation-review` | "review my EKS cluster" | EKS operational excellence assessment (10 areas, GREEN/AMBER/RED rated report) |
 
 ### How to use skills
 
