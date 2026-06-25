@@ -1088,9 +1088,37 @@ def handle_get_remediation_guidance(event: dict[str, Any]) -> dict[str, Any]:
     full scan, small regardless of account size). Falls back to
     ``non_compliant_resources`` (per-resource, may be truncated by
     check_tag_compliance's max_resources cap) for backwards compatibility.
+
+    Self-contained fallback: if NEITHER ``remediation_buckets`` NOR
+    ``non_compliant_resources`` is supplied, this tool runs
+    check_tag_compliance internally (passing the same event through, so
+    required_tags / use_aws_evaluation / resource_types / regions all apply)
+    and uses the buckets it produces. This lets a planner that can't thread a
+    prior tool's JSON output back in (e.g. Amazon Quick) call
+    get_remediation_guidance standalone. Mirrors assess_dx_resiliency, which
+    fetches its own topology when none is passed.
     """
     scan_method = event.get("scan_method", "resource_explorer")
     max_links = max(1, int(event.get("max_links", 20)))
+
+    # Self-contained fallback: no buckets AND no per-resource list → run the
+    # compliance scan ourselves to regenerate buckets. The internal scan must
+    # finish within the caller's invocation timeout; for normally-sized
+    # accounts this is well under the limit.
+    if not event.get("remediation_buckets") and not event.get("non_compliant_resources"):
+        compliance = handle_check_tag_compliance(event)
+        # Propagate non-success responses verbatim (no policy, RE not indexed,
+        # payer-only errors) so the caller sees the actionable hint, not an
+        # empty link list.
+        if compliance.get("error") or compliance.get("status") not in (None, "ok"):
+            return compliance
+        event = {
+            **event,
+            "remediation_buckets": compliance.get("remediation_buckets", []),
+            # Use the scan's actual method so the invalid_value caveat is correct.
+            "scan_method": compliance.get("scan_method", scan_method),
+        }
+        scan_method = event["scan_method"]
 
     # Prefer pre-aggregated buckets — they reflect the full scan, not a
     # truncated sample. Fall back to reconstructing from non_compliant_resources

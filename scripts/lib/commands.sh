@@ -569,6 +569,19 @@ _configure_prompts() {
   _answers_set OBSERVABILITY_LOG_RETENTION_DAYS "$log_retention"
   _answers_set GATEWAY_AUTH "$gateway_auth"
 
+  # JWT claim is only meaningful for the oauth authorizer. Ask only when oauth
+  # is selected; otherwise leave it untouched so iam/full deployments never see
+  # the prompt and the stored value (if any) is preserved. Default "client" is
+  # the Quick-friendly choice (access tokens carry client_id, not aud); AG-UI/
+  # ID-token callers should pick "audience".
+  if [ "$gateway_auth" = "oauth" ]; then
+    local jwt_validation_claim
+    shared_config_prompt jwt_validation_claim \
+      "JWT validation claim (client=Quick access tokens / audience=AG-UI ID tokens)" \
+      "$(shared_config_get GATEWAY_JWT_VALIDATION_CLAIM client)"
+    _answers_set GATEWAY_JWT_VALIDATION_CLAIM "$jwt_validation_claim"
+  fi
+
   # -------------------------------------------------------------------------
   # MODELS — shared deployment policy. Per-agent overrides in hierarchy.json
   # still win at runtime; this just sets the default.

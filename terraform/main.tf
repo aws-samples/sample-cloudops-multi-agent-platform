@@ -71,6 +71,7 @@ module "shared_config" {
   custom_idp_client_secret              = var.custom_idp_client_secret
   app_url                               = var.app_url
   gateway_auth                          = var.gateway_auth
+  jwt_validation_claim                  = var.jwt_validation_claim
   cross_account_role_arn                = try(var.tool_env_vars["cost-explorer"]["CROSS_ACCOUNT_ROLE_ARN"], "")
   cross_account_role_arn_coh            = try(var.tool_env_vars["cost-optimization-hub"]["CROSS_ACCOUNT_ROLE_ARN_COH"], "")
   cross_account_role_arn_tag_governance = try(var.tool_env_vars["tag-governance"]["CROSS_ACCOUNT_ROLE_ARN_TAG_GOVERNANCE"], "")
@@ -111,8 +112,20 @@ module "cognito" {
   # code flow is enabled, so we seed with localhost as a bootstrap. The
   # post-apply hook in deploy.sh then updates `app_url` in
   # config.auto.tfvars.json and re-applies, which swaps localhost out.
-  callback_urls = var.app_url != "" ? ["${var.app_url}/callback/", "http://localhost:3000/"] : ["http://localhost:3000/"]
-  logout_urls   = var.app_url != "" ? ["${var.app_url}/", "http://localhost:3000/"] : ["http://localhost:3000/"]
+  #
+  # When gateway_auth = oauth (Quick integration), also allow-list Quick's
+  # hosted OAuth redirect URLs and generate a client secret — Quick's user-auth
+  # flow requires both. These are additive, so the frontend/localhost callbacks
+  # still work for the AG-UI path.
+  callback_urls = concat(
+    var.app_url != "" ? ["${var.app_url}/callback/", "http://localhost:3000/"] : ["http://localhost:3000/"],
+    var.gateway_auth == "oauth" ? var.quick_oauth_callback_urls : [],
+  )
+  logout_urls     = var.app_url != "" ? ["${var.app_url}/", "http://localhost:3000/"] : ["http://localhost:3000/"]
+  generate_secret = var.gateway_auth == "oauth"
+  # "phone" is requested by Quick's OAuth flow but unused by the AG-UI app —
+  # only allow-list it on the oauth path so the iam/frontend client is unchanged.
+  extra_oauth_scopes = var.gateway_auth == "oauth" ? ["phone"] : []
 }
 
 locals {
@@ -309,6 +322,7 @@ module "agentcore_gateway" {
   # OAuth config (only used when gateway_auth = "oauth")
   cognito_user_pool_id  = local.cognito_user_pool_id
   cognito_app_client_id = local.cognito_app_client_id
+  jwt_validation_claim  = var.jwt_validation_claim
 
   lambda_tool_arns = {
     for k, v in module.lambda_tools : k => v.lambda_function_arn

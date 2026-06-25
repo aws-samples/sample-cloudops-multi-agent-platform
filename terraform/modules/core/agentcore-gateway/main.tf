@@ -64,8 +64,12 @@ resource "aws_bedrockagentcore_gateway" "this" {
     for_each = var.gateway_auth == "oauth" ? [1] : []
     content {
       custom_jwt_authorizer {
-        discovery_url    = "https://cognito-idp.${data.aws_region.current.region}.amazonaws.com/${var.cognito_user_pool_id}/.well-known/openid-configuration"
-        allowed_audience = [var.cognito_app_client_id]
+        discovery_url = "https://cognito-idp.${data.aws_region.current.region}.amazonaws.com/${var.cognito_user_pool_id}/.well-known/openid-configuration"
+        # Access tokens (Quick) carry the client ID in `client_id`, not `aud`;
+        # ID tokens (AG-UI frontend) carry it in `aud`. Validate the claim the
+        # incoming token type actually populates, or the gateway 403s.
+        allowed_clients  = var.jwt_validation_claim == "client" ? [var.cognito_app_client_id] : null
+        allowed_audience = var.jwt_validation_claim == "audience" ? [var.cognito_app_client_id] : null
       }
     }
   }

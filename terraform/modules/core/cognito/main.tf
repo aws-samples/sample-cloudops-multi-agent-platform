@@ -69,11 +69,19 @@ resource "aws_cognito_user_pool_client" "main" {
   name         = "${var.project_tag}-app-client"
   user_pool_id = aws_cognito_user_pool.main.id
 
-  generate_secret = false
+  generate_secret = var.generate_secret
 
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_flows                  = ["code"]
-  allowed_oauth_scopes                 = ["openid", "email", "profile"]
+  # Base scopes the AG-UI frontend needs. `extra_oauth_scopes` is appended only
+  # for the Quick (oauth) path: Amazon Quick reads Cognito's OIDC discovery,
+  # which advertises scopes_supported = [openid, email, phone, profile], and
+  # requests ALL of them ("phone openid profile email"). The app client must
+  # allow every scope Quick requests or Cognito's authorize endpoint returns
+  # invalid_scope — hence "phone" gets added for oauth even though the app
+  # itself doesn't use it. For the iam/frontend path it stays out, so an
+  # existing AG-UI deployment sees no scope change.
+  allowed_oauth_scopes = concat(["openid", "email", "profile"], var.extra_oauth_scopes)
 
   supported_identity_providers = ["COGNITO"]
 

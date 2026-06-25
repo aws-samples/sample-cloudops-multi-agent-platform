@@ -57,6 +57,12 @@ variable "gateway_auth" {
   default     = "iam"
 }
 
+variable "jwt_validation_claim" {
+  description = "OAuth gateway JWT claim to validate the Cognito client ID against — audience (ID tokens, AG-UI) or client (access tokens, Quick). Only used when gateway_auth = oauth."
+  type        = string
+  default     = "audience"
+}
+
 variable "cross_account_role_arn" {
   description = "Default cross-account role ARN used by MCP tools with CROSS_ACCOUNT_ROLE_ARN env var."
   type        = string
