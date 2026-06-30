@@ -143,6 +143,39 @@ variable "gateway_auth" {
   }
 }
 
+variable "jwt_validation_claim" {
+  description = <<-EOT
+    Which JWT claim the OAuth gateway authorizer validates the Cognito client ID
+    against. Only consulted when gateway_auth = "oauth"; ignored for iam.
+      - "audience" (default): validate the `aud` claim. Use for callers that send
+        Cognito ID tokens (e.g. the AG-UI frontend). This is the pre-existing
+        behavior, kept as the default so upgrading an existing oauth deployment
+        does not silently change validation.
+      - "client": validate the `client_id` claim. Use for callers that send
+        Cognito ACCESS tokens (e.g. Amazon Quick and OAuth resource-access
+        MCP clients generally) — access tokens have no `aud` claim, so audience
+        validation 403s them. `make configure` offers this as the default once
+        you pick gateway_auth = oauth.
+  EOT
+  type        = string
+  default     = "audience"
+
+  validation {
+    condition     = contains(["client", "audience"], var.jwt_validation_claim)
+    error_message = "jwt_validation_claim must be one of: client, audience"
+  }
+}
+
+variable "quick_oauth_callback_urls" {
+  description = "Amazon Quick OAuth redirect URLs to allow-list on the Cognito app client when gateway_auth = oauth. Region-specific; defaults to the three Quick regions. Quick uses one of these as its Redirect URL in the MCP integration."
+  type        = list(string)
+  default = [
+    "https://us-east-1.quicksight.aws.amazon.com/sn/oauthcallback",
+    "https://us-west-2.quicksight.aws.amazon.com/sn/oauthcallback",
+    "https://eu-west-1.quicksight.aws.amazon.com/sn/oauthcallback",
+  ]
+}
+
 variable "tool_env_vars" {
   description = "Per-tool environment variables resolved from .env. Map of tool_name -> { key = value }."
   type        = map(map(string))
