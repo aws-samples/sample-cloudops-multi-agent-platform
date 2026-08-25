@@ -1,6 +1,6 @@
 """Unit tests for the lambda-runtime MCP tool.
 
-Covers the 7 functional tools + dispatcher:
+Covers the 8 functional tools + dispatcher:
   * Dispatcher — unknown tool returns error + tool list; known tool routes
   * _classify_runtime — deprecated vs EOL vs active vs unknown (pure logic)
   * handle_get_function_configuration — success + missing function_name
@@ -106,7 +106,8 @@ class TestDispatcher:
         assert result["error"].startswith("Unknown tool: nonexistent_tool")
         assert "discover_lambda_regions" in result["available_tools"]
         assert "get_function_code" in result["available_tools"]
-        assert len(result["available_tools"]) == 7
+        assert "generate_upgrade_analysis" in result["available_tools"]
+        assert len(result["available_tools"]) == 8
 
     def test_known_tool_routes_correctly(self, monkeypatch):
         """Dispatcher routes to the correct handler function."""
@@ -624,3 +625,160 @@ class TestGetDeprecatedFunctions:
 
         result = handler.handle_get_deprecated_functions({})
         assert "AccessDenied" in result["error"]
+
+
+# ---------------------------------------------------------------------------
+# Deterministic breaking-change detection (_analyze_code_for_breaking_changes)
+# ---------------------------------------------------------------------------
+
+
+class TestAnalyzeCodeForBreakingChanges:
+    def test_python_removed_stdlib_modules_flagged(self):
+        source = {
+            "handler.py": "import json\nfrom cgi import parse_header\nimport distutils.util\n",
+        }
+        findings = handler._analyze_code_for_breaking_changes(
+            source, "python", "python3.12"
+        )
+        # cgi (line 2) and distutils (line 3) both flagged
+        assert len(findings) == 2
+        lines = sorted(f["line"] for f in findings)
+        assert lines == [2, 3]
+        assert all("removed in Python 3.12" in f["message"] for f in findings)
+
+    def test_node_aws_sdk_v2_flagged(self):
+        source = {"index.js": "const AWS = require('aws-sdk');\n"}
+        findings = handler._analyze_code_for_breaking_changes(
+            source, "nodejs", "nodejs20.x"
+        )
+        assert len(findings) == 1
+        assert "AWS SDK v2" in findings[0]["message"]
+        assert findings[0]["line"] == 1
+
+    def test_java_javax_and_sdk_v1_flagged(self):
+        source = {
+            "Handler.java": "import javax.xml.bind.JAXB;\nimport com.amazonaws.services.s3.AmazonS3;\n",
+        }
+        findings = handler._analyze_code_for_breaking_changes(
+            source, "java", "java21"
+        )
+        assert len(findings) == 2
+
+    def test_clean_code_yields_no_findings(self):
+        source = {"handler.py": "import json\nimport boto3\n\ndef handler(e, c):\n    return {}\n"}
+        findings = handler._analyze_code_for_breaking_changes(
+            source, "python", "python3.12"
+        )
+        assert findings == []
+
+    def test_skipped_file_markers_are_ignored(self):
+        source = {"big.py": "[SKIPPED: 999KB exceeds limit]"}
+        findings = handler._analyze_code_for_breaking_changes(
+            source, "python", "python3.12"
+        )
+        assert findings == []
+
+    def test_dependency_manifest_boto3_pin_flagged(self):
+        source = {"requirements.txt": "boto3==1.26.0\nrequests==2.28.0\n"}
+        findings = handler._analyze_code_for_breaking_changes(
+            source, "python", "python3.12"
+        )
+        assert len(findings) == 1
+        assert findings[0]["kind"] == "dependency"
+
+    def test_target_gating_skips_inapplicable_rules(self):
+        # url.parse only applies to nodejs20.x/22.x, not nodejs18.x
+        source = {"index.js": "const u = url.parse(x);\n"}
+        findings_18 = handler._analyze_code_for_breaking_changes(
+            source, "nodejs", "nodejs18.x"
+        )
+        findings_20 = handler._analyze_code_for_breaking_changes(
+            source, "nodejs", "nodejs20.x"
+        )
+        assert not any("url.parse" in f["message"] for f in findings_18)
+        assert any("url.parse" in f["message"] for f in findings_20)
+
+
+# ---------------------------------------------------------------------------
+# One-shot aggregator (handle_generate_upgrade_analysis)
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateUpgradeAnalysis:
+    def test_scans_given_regions_and_analyzes_top_functions(self, cross_account_stub):
+        """End-to-end: given regions, scans + picks top function + analyzes code."""
+        # Lambda client mock: one EOL python3.8 function
+        lambda_client = MagicMock()
+        paginator = MagicMock()
+        paginator.paginate.return_value = [
+            {"Functions": [
+                {"FunctionName": "eol-fn", "Runtime": "python3.8",
+                 "Handler": "handler.handler", "LastModified": "2024-01-01T00:00:00Z",
+                 "CodeSize": 1000, "MemorySize": 128, "PackageType": "Zip"},
+            ]}
+        ]
+        lambda_client.get_paginator.return_value = paginator
+        lambda_client.get_function_configuration.return_value = {
+            "FunctionName": "eol-fn", "Layers": [], "Architectures": ["x86_64"],
+            "Timeout": 3, "Environment": {"Variables": {}},
+        }
+        lambda_client.get_function.return_value = {
+            "Code": {"Location": "https://example.com/code.zip"}
+        }
+        cross_account_stub.get_aws_client.return_value = lambda_client
+
+        # Downloaded code contains a removed module
+        zip_bytes = _make_zip({"handler.py": "from cgi import parse_header\n"})
+        http_resp = MagicMock(status=200, data=zip_bytes)
+        with patch.object(handler.urllib3, "PoolManager") as pm:
+            pm.return_value.request.return_value = http_resp
+            result = handler.handle_generate_upgrade_analysis(
+                {"regions": ["us-east-1"], "max_functions_to_analyze": 5}
+            )
+
+        assert result["summary"]["total_deprecated_functions"] == 1
+        assert result["summary"]["by_priority"]["end_of_life"] == 1
+        assert len(result["detailed_analysis"]) == 1
+        analysis = result["detailed_analysis"][0]
+        assert analysis["function_name"] == "eol-fn"
+        assert analysis["code_analysis"]["status"] == "complete"
+        assert analysis["code_analysis"]["breaking_changes_detected"] == 1
+
+    def test_no_deprecated_functions_returns_empty(self, cross_account_stub):
+        lambda_client = MagicMock()
+        paginator = MagicMock()
+        paginator.paginate.return_value = [
+            {"Functions": [
+                {"FunctionName": "modern", "Runtime": "python3.13",
+                 "LastModified": "2025-01-01T00:00:00Z", "CodeSize": 100,
+                 "MemorySize": 128, "PackageType": "Zip"},
+            ]}
+        ]
+        lambda_client.get_paginator.return_value = paginator
+        cross_account_stub.get_aws_client.return_value = lambda_client
+
+        result = handler.handle_generate_upgrade_analysis({"regions": ["us-east-1"]})
+        assert result["summary"]["total_deprecated_functions"] == 0
+        assert result["detailed_analysis"] == []
+
+    def test_container_image_function_skips_code_download(self, cross_account_stub):
+        lambda_client = MagicMock()
+        paginator = MagicMock()
+        paginator.paginate.return_value = [
+            {"Functions": [
+                {"FunctionName": "img-fn", "Runtime": "python3.8",
+                 "LastModified": "2024-01-01T00:00:00Z", "CodeSize": 1000,
+                 "MemorySize": 128, "PackageType": "Image"},
+            ]}
+        ]
+        lambda_client.get_paginator.return_value = paginator
+        lambda_client.get_function_configuration.return_value = {
+            "FunctionName": "img-fn", "Layers": [], "Architectures": ["x86_64"],
+            "Timeout": 3, "Environment": {"Variables": {}},
+        }
+        cross_account_stub.get_aws_client.return_value = lambda_client
+
+        result = handler.handle_generate_upgrade_analysis({"regions": ["us-east-1"]})
+        analysis = result["detailed_analysis"][0]
+        assert analysis["code_analysis"]["status"] == "skipped"
+        assert "Container-image" in analysis["code_analysis"]["reason"]

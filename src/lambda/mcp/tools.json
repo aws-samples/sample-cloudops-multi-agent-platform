@@ -1611,6 +1611,28 @@
         ],
         "tools": [
             {
+                "name": "generate_upgrade_analysis",
+                "description": "ONE-SHOT fast path for upgrade reports. In a single call, discovers regions (or uses the ones you pass), scans them all in parallel for deprecated/EOL functions, downloads code for the top N highest-priority functions, and runs deterministic breaking-change detection on that code — all server-side in Python. Returns a complete pre-analyzed dataset (summary, full inventory, and per-function code findings with file/line/fix). PREFER THIS over calling discover/scan/config/code tools separately: it is much faster because it avoids many sequential round-trips. After calling it, use the returned findings to write migration guidance and a prioritized playbook.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "regions": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Regions to scan (e.g., ['us-east-1','eu-west-1']). Omit to auto-discover all regions with Lambda functions."
+                        },
+                        "max_functions_to_analyze": {
+                            "type": "integer",
+                            "description": "How many top-priority functions to download code for and deep-analyze (default: 5, max: 10). Others get inventory-only entries."
+                        },
+                        "include_approaching_deprecation": {
+                            "type": "boolean",
+                            "description": "Include functions approaching deprecation within 6 months (default: true)."
+                        }
+                    }
+                }
+            },
+            {
                 "name": "discover_lambda_regions",
                 "description": "Discover which AWS regions have Lambda functions deployed. Scans all enabled regions in parallel and returns each region's function count plus how many are on deprecated or end-of-life runtimes. Use this FIRST to let the user choose which regions to include in a report.",
                 "input_schema": {
