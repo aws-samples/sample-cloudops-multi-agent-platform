@@ -1607,12 +1607,13 @@
             "lambda:ListFunctions",
             "lambda:GetFunction",
             "lambda:GetFunctionConfiguration",
-            "ec2:DescribeRegions"
+            "ec2:DescribeRegions",
+            "cloudwatch:GetMetricData"
         ],
         "tools": [
             {
                 "name": "generate_upgrade_analysis",
-                "description": "ONE-SHOT fast path for upgrade reports. In a single call, discovers regions (or uses the ones you pass), scans them all in parallel for deprecated/EOL functions, downloads code for the top N highest-priority functions, and runs deterministic breaking-change detection on that code — all server-side in Python. Returns a complete pre-analyzed dataset (summary, full inventory, and per-function code findings with file/line/fix). PREFER THIS over calling discover/scan/config/code tools separately: it is much faster because it avoids many sequential round-trips. After calling it, use the returned findings to write migration guidance and a prioritized playbook.",
+                "description": "ONE-SHOT fast path for upgrade reports. In a single call, discovers regions (or uses the ones you pass), scans them all in parallel for deprecated/EOL functions, enriches each with an effort bucket (green=direct flip / yellow=dependency-or-native rebuild / red=SDK migration), a test-artifact flag, and days-since-last-invocation (CloudWatch), then downloads code for the top code-change-risk functions and runs deterministic breaking-change detection. Returns a pre-analyzed dataset: summary (counts by priority/effort/region/runtime), deletion_candidates (test/idle functions), grouping (quick_wins/dependency_rebuilds/sdk_migrations), top_inventory (capped sample), and detailed_analysis (per-function code findings with file/line/fix). PREFER THIS over calling other tools separately — it is far faster and avoids many round-trips. Render the report from the counts and groups; do NOT print every function individually.",
                 "input_schema": {
                     "type": "object",
                     "properties": {
