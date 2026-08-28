@@ -1,6 +1,6 @@
 """Unit tests for the lambda-runtime MCP tool.
 
-Covers the 7 functional tools + dispatcher:
+Covers the 8 functional tools + dispatcher:
   * Dispatcher — unknown tool returns error + tool list; known tool routes
   * _classify_runtime — deprecated vs EOL vs active vs unknown (pure logic)
   * handle_get_function_configuration — success + missing function_name
@@ -106,7 +106,8 @@ class TestDispatcher:
         assert result["error"].startswith("Unknown tool: nonexistent_tool")
         assert "discover_lambda_regions" in result["available_tools"]
         assert "get_function_code" in result["available_tools"]
-        assert len(result["available_tools"]) == 7
+        assert "generate_upgrade_analysis" in result["available_tools"]
+        assert len(result["available_tools"]) == 8
 
     def test_known_tool_routes_correctly(self, monkeypatch):
         """Dispatcher routes to the correct handler function."""
@@ -624,3 +625,370 @@ class TestGetDeprecatedFunctions:
 
         result = handler.handle_get_deprecated_functions({})
         assert "AccessDenied" in result["error"]
+
+
+# ---------------------------------------------------------------------------
+# Deterministic breaking-change detection (_analyze_code_for_breaking_changes)
+# ---------------------------------------------------------------------------
+
+
+class TestAnalyzeCodeForBreakingChanges:
+    def test_python_removed_stdlib_modules_flagged(self):
+        source = {
+            "handler.py": "import json\nfrom cgi import parse_header\nimport distutils.util\n",
+        }
+        findings = handler._analyze_code_for_breaking_changes(
+            source, "python", "python3.12"
+        )
+        # cgi (line 2) and distutils (line 3) both flagged
+        assert len(findings) == 2
+        lines = sorted(f["line"] for f in findings)
+        assert lines == [2, 3]
+        assert all("removed in Python 3.12" in f["message"] for f in findings)
+
+    def test_node_aws_sdk_v2_flagged(self):
+        source = {"index.js": "const AWS = require('aws-sdk');\n"}
+        findings = handler._analyze_code_for_breaking_changes(
+            source, "nodejs", "nodejs20.x"
+        )
+        assert len(findings) == 1
+        assert "AWS SDK v2" in findings[0]["message"]
+        assert findings[0]["line"] == 1
+
+    def test_java_javax_and_sdk_v1_flagged(self):
+        source = {
+            "Handler.java": "import javax.xml.bind.JAXB;\nimport com.amazonaws.services.s3.AmazonS3;\n",
+        }
+        findings = handler._analyze_code_for_breaking_changes(
+            source, "java", "java21"
+        )
+        assert len(findings) == 2
+
+    def test_clean_code_yields_no_findings(self):
+        source = {"handler.py": "import json\nimport boto3\n\ndef handler(e, c):\n    return {}\n"}
+        findings = handler._analyze_code_for_breaking_changes(
+            source, "python", "python3.12"
+        )
+        assert findings == []
+
+    def test_skipped_file_markers_are_ignored(self):
+        source = {"big.py": "[SKIPPED: 999KB exceeds limit]"}
+        findings = handler._analyze_code_for_breaking_changes(
+            source, "python", "python3.12"
+        )
+        assert findings == []
+
+    def test_dependency_manifest_boto3_pin_flagged(self):
+        source = {"requirements.txt": "boto3==1.26.0\nrequests==2.28.0\n"}
+        findings = handler._analyze_code_for_breaking_changes(
+            source, "python", "python3.12"
+        )
+        assert len(findings) == 1
+        assert findings[0]["kind"] == "dependency"
+
+    def test_target_gating_skips_inapplicable_rules(self):
+        # url.parse only applies to nodejs20.x/22.x, not nodejs18.x
+        source = {"index.js": "const u = url.parse(x);\n"}
+        findings_18 = handler._analyze_code_for_breaking_changes(
+            source, "nodejs", "nodejs18.x"
+        )
+        findings_20 = handler._analyze_code_for_breaking_changes(
+            source, "nodejs", "nodejs20.x"
+        )
+        assert not any("url.parse" in f["message"] for f in findings_18)
+        assert any("url.parse" in f["message"] for f in findings_20)
+
+
+# ---------------------------------------------------------------------------
+# One-shot aggregator (handle_generate_upgrade_analysis)
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateUpgradeAnalysis:
+    def test_scans_given_regions_and_analyzes_top_functions(self, cross_account_stub):
+        """End-to-end: given regions, scans + picks top function + analyzes code."""
+        # Lambda client mock: one EOL python3.8 function
+        lambda_client = MagicMock()
+        paginator = MagicMock()
+        paginator.paginate.return_value = [
+            {"Functions": [
+                {"FunctionName": "eol-fn", "Runtime": "python3.8",
+                 "Handler": "handler.handler", "LastModified": "2024-01-01T00:00:00Z",
+                 "CodeSize": 1000, "MemorySize": 128, "PackageType": "Zip"},
+            ]}
+        ]
+        lambda_client.get_paginator.return_value = paginator
+        lambda_client.get_function_configuration.return_value = {
+            "FunctionName": "eol-fn", "Layers": [], "Architectures": ["x86_64"],
+            "Timeout": 3, "Environment": {"Variables": {}},
+        }
+        lambda_client.get_function.return_value = {
+            "Code": {"Location": "https://example.com/code.zip"}
+        }
+        cross_account_stub.get_aws_client.return_value = lambda_client
+
+        # Downloaded code contains a removed module
+        zip_bytes = _make_zip({"handler.py": "from cgi import parse_header\n"})
+        http_resp = MagicMock(status=200, data=zip_bytes)
+        with patch.object(handler.urllib3, "PoolManager") as pm:
+            pm.return_value.request.return_value = http_resp
+            result = handler.handle_generate_upgrade_analysis(
+                {"regions": ["us-east-1"], "max_functions_to_analyze": 5}
+            )
+
+        assert result["summary"]["total_deprecated_functions"] == 1
+        assert result["summary"]["by_priority"]["end_of_life"] == 1
+        # Critical functions are now enumerated in full, grouped by region
+        assert result["summary"]["critical_total"] == 1
+        assert result["summary"]["critical_code_scanned"] == 1
+        crit = result["critical_functions_by_region"]["us-east-1"]
+        assert len(crit) == 1
+        entry = crit[0]
+        assert entry["function_name"] == "eol-fn"
+        assert entry["code_scan_status"] == "complete"
+        assert len(entry["findings"]) == 1
+        assert "cgi" in entry["recommendation"] or "removed" in entry["recommendation"]
+
+    def test_no_deprecated_functions_returns_empty(self, cross_account_stub):
+        lambda_client = MagicMock()
+        paginator = MagicMock()
+        paginator.paginate.return_value = [
+            {"Functions": [
+                {"FunctionName": "modern", "Runtime": "python3.13",
+                 "LastModified": "2025-01-01T00:00:00Z", "CodeSize": 100,
+                 "MemorySize": 128, "PackageType": "Zip"},
+            ]}
+        ]
+        lambda_client.get_paginator.return_value = paginator
+        cross_account_stub.get_aws_client.return_value = lambda_client
+
+        result = handler.handle_generate_upgrade_analysis({"regions": ["us-east-1"]})
+        assert result["summary"]["total_deprecated_functions"] == 0
+        assert result["summary"]["critical_total"] == 0
+        assert result["critical_functions_by_region"] == {}
+
+    def test_container_image_function_falls_back_to_generic_recommendation(self, cross_account_stub):
+        lambda_client = MagicMock()
+        paginator = MagicMock()
+        paginator.paginate.return_value = [
+            {"Functions": [
+                {"FunctionName": "img-fn", "Runtime": "python3.8",
+                 "LastModified": "2024-01-01T00:00:00Z", "CodeSize": 1000,
+                 "MemorySize": 128, "PackageType": "Image"},
+            ]}
+        ]
+        lambda_client.get_paginator.return_value = paginator
+        lambda_client.get_function_configuration.return_value = {
+            "FunctionName": "img-fn", "Layers": [], "Architectures": ["x86_64"],
+            "Timeout": 3, "Environment": {"Variables": {}},
+        }
+        cross_account_stub.get_aws_client.return_value = lambda_client
+
+        result = handler.handle_generate_upgrade_analysis({"regions": ["us-east-1"]})
+        entry = result["critical_functions_by_region"]["us-east-1"][0]
+        # container image → code skipped → still gets a family-generic recommendation
+        assert entry["code_scan_status"] == "skipped"
+        assert entry["recommendation"]  # non-empty guidance present
+
+
+# ---------------------------------------------------------------------------
+# Deterministic enrichment: test-artifact detection + effort buckets
+# ---------------------------------------------------------------------------
+
+
+class TestEnrichmentHelpers:
+    @pytest.mark.parametrize("name", [
+        "test-2", "test-node", "delete-me", "intern-1", "hello-world",
+        "tese", "my-demo", "poc-thing", "sandbox-fn",
+    ])
+    def test_test_artifact_names_flagged(self, name):
+        assert handler._is_test_artifact(name) is True
+
+    @pytest.mark.parametrize("name", [
+        "read-from-aurora-rds", "payment-processor", "latest-orders",
+        "contest-winner", "attestation-svc",
+    ])
+    def test_real_names_not_flagged(self, name):
+        # 'latest'/'contest'/'attestation' contain 'test' as a substring but
+        # must NOT be flagged (word-boundary-ish check).
+        assert handler._is_test_artifact(name) is False
+
+    def test_effort_bucket_sdk_migration_is_red(self):
+        for rt in ("nodejs14.x", "nodejs16.x", "java8", "dotnet6"):
+            eb = handler._effort_bucket(rt)
+            assert eb["bucket"] == "red", rt
+
+    def test_effort_bucket_native_rebuild_is_yellow(self):
+        assert handler._effort_bucket("provided.al2")["bucket"] == "yellow"
+
+    def test_effort_bucket_layers_bump_to_yellow(self):
+        assert handler._effort_bucket("python3.9", has_layers=True)["bucket"] == "yellow"
+
+    def test_effort_bucket_direct_flip_is_green(self):
+        assert handler._effort_bucket("python3.9")["bucket"] == "green"
+
+
+class TestLastInvokedFetch:
+    def test_maps_recent_invocation_to_days(self):
+        from datetime import datetime, timezone, timedelta
+        cw = MagicMock()
+        recent = datetime.now(timezone.utc) - timedelta(days=5)
+        cw.get_metric_data.return_value = {
+            "MetricDataResults": [
+                {"Id": "m0", "Timestamps": [recent]},
+                {"Id": "m1", "Timestamps": []},  # never invoked in window
+            ]
+        }
+        out = handler._fetch_last_invoked_days(cw, ["fn-a", "fn-b"], "us-east-1")
+        assert out["fn-a"] in (4, 5, 6)  # allow rounding
+        assert out["fn-b"] is None
+
+    def test_failure_is_non_fatal(self):
+        cw = MagicMock()
+        cw.get_metric_data.side_effect = RuntimeError("throttled")
+        out = handler._fetch_last_invoked_days(cw, ["fn-a"], "us-east-1")
+        assert out == {}
+
+
+class TestAggregatorEnrichedOutput:
+    def test_output_has_grouping_and_deletion_candidates(self, cross_account_stub):
+        """Aggregator returns effort grouping + deletion candidates."""
+        lambda_client = MagicMock()
+        paginator = MagicMock()
+        paginator.paginate.return_value = [
+            {"Functions": [
+                # RED sdk-migration, real name
+                {"FunctionName": "orders-api", "Runtime": "nodejs14.x",
+                 "LastModified": "2024-01-01T00:00:00Z", "CodeSize": 1000,
+                 "MemorySize": 128, "PackageType": "Zip", "Handler": "i.h"},
+                # GREEN direct flip, but test artifact name
+                {"FunctionName": "test-2", "Runtime": "python3.9",
+                 "LastModified": "2024-01-01T00:00:00Z", "CodeSize": 500,
+                 "MemorySize": 128, "PackageType": "Zip", "Handler": "h.h"},
+            ]}
+        ]
+        lambda_client.get_paginator.return_value = paginator
+        lambda_client.get_function_configuration.return_value = {
+            "FunctionName": "orders-api", "Layers": [], "Architectures": ["x86_64"],
+            "Timeout": 3, "Environment": {"Variables": {}},
+        }
+        lambda_client.get_function.return_value = {"Code": {"Location": "https://x/c.zip"}}
+        cw_client = MagicMock()
+        cw_client.get_metric_data.return_value = {"MetricDataResults": []}
+
+        def _client(service, region_name=None, **kw):
+            return cw_client if service == "cloudwatch" else lambda_client
+        cross_account_stub.get_aws_client.side_effect = _client
+
+        zip_bytes = _make_zip({"index.js": "const AWS = require('aws-sdk');\n"})
+        with patch.object(handler.urllib3, "PoolManager") as pm:
+            pm.return_value.request.return_value = MagicMock(status=200, data=zip_bytes)
+            result = handler.handle_generate_upgrade_analysis(
+                {"regions": ["us-east-1"], "max_functions_to_analyze": 5}
+            )
+
+        s = result["summary"]
+        assert s["total_deprecated_functions"] == 2
+        assert s["by_effort"]["red"] == 1
+        assert s["by_effort"]["green"] == 1
+        # test-2 is a deletion candidate (test artifact)
+        names = [d["function_name"] for d in result["deletion_candidates"]]
+        assert "test-2" in names
+        # grouping present
+        assert "orders-api" in result["grouping"]["sdk_migrations_red"]
+        # both are EOL (nodejs14 + python3.9? -> python3.9 is deprecated not EOL).
+        # orders-api (nodejs14.x) is critical and must appear with its finding.
+        crit = result["critical_functions_by_region"]["us-east-1"]
+        crit_by_name = {c["function_name"]: c for c in crit}
+        assert "orders-api" in crit_by_name
+        assert len(crit_by_name["orders-api"]["findings"]) == 1
+        assert "aws-sdk" in crit_by_name["orders-api"]["recommendation"].lower() \
+            or "sdk v2" in crit_by_name["orders-api"]["recommendation"].lower()
+
+
+# ---------------------------------------------------------------------------
+# Deterministic report markdown renderer
+# ---------------------------------------------------------------------------
+
+
+class TestReportMarkdownRenderer:
+    def _sample(self):
+        summary = {
+            "total_deprecated_functions": 5, "regions_scanned": 2,
+            "regions_with_issues": 1,
+            "by_priority": {"end_of_life": 2, "deprecated": 2, "approaching": 1},
+            "by_effort": {"green": 3, "yellow": 0, "red": 2},
+            "critical_total": 2, "critical_code_scanned": 2,
+        }
+        cbr = {"us-east-1": [
+            {"function_name": "orders", "runtime": "nodejs14.x",
+             "upgrade_target": "nodejs20.x", "effort_bucket": "red",
+             "effort_label": "SDK migration", "last_invoked_days": None,
+             "recommendation": "index.js:2 — Uses AWS SDK v2 → migrate",
+             "findings": [{"file": "index.js", "line": 2,
+                           "message": "Uses AWS SDK v2 (aws-sdk)",
+                           "fix": "Migrate to modular AWS SDK v3", "kind": "code"}]},
+            {"function_name": "clean-fn", "runtime": "python3.8",
+             "upgrade_target": "python3.12", "effort_bucket": "green",
+             "effort_label": "Direct flip", "last_invoked_days": 5,
+             "recommendation": "No breaking changes detected.", "findings": []},
+        ]}
+        dc = [{"function_name": "test-1", "region": "us-east-1",
+               "runtime": "python3.9", "reason": "test/throwaway name",
+               "last_invoked_days": None}]
+        grp = {"quick_wins_green": ["a", "b"], "dependency_rebuilds_yellow": [],
+               "sdk_migrations_red": ["orders"]}
+        hm = {"high_count": 2, "medium_count": 1}
+        return summary, cbr, dc, grp, hm
+
+    def test_renders_all_critical_functions_with_recommendations(self):
+        md = handler._render_report_markdown(*self._sample())
+        # every critical function present
+        assert "orders" in md and "clean-fn" in md
+        # code-change detail with the fix present (the key user complaint)
+        assert "Code changes required" in md
+        assert "Migrate to modular AWS SDK v3" in md
+        assert "`index.js:2`" in md
+        # sections present
+        assert "## Executive Summary" in md
+        assert "Candidates for Deletion" in md
+        assert "CRITICAL Functions" in md
+        # HIGH/MEDIUM summarized, not enumerated as individual critical rows
+        assert "HIGH & 🟡 MEDIUM" in md
+
+    def test_no_critical_is_handled(self):
+        summary, _, dc, grp, hm = self._sample()
+        summary["critical_total"] = 0
+        md = handler._render_report_markdown(summary, {}, [], grp, hm)
+        assert "No functions on end-of-life runtimes" in md
+
+    def test_aggregator_includes_report_markdown(self, cross_account_stub):
+        lambda_client = MagicMock()
+        paginator = MagicMock()
+        paginator.paginate.return_value = [
+            {"Functions": [
+                {"FunctionName": "orders", "Runtime": "nodejs14.x",
+                 "LastModified": "2024-01-01T00:00:00Z", "CodeSize": 1000,
+                 "MemorySize": 128, "PackageType": "Zip", "Handler": "i.h"},
+            ]}
+        ]
+        lambda_client.get_paginator.return_value = paginator
+        lambda_client.get_function_configuration.return_value = {
+            "FunctionName": "orders", "Layers": [], "Architectures": ["x86_64"],
+            "Timeout": 3, "Environment": {"Variables": {}},
+        }
+        lambda_client.get_function.return_value = {"Code": {"Location": "https://x/c.zip"}}
+        cw = MagicMock()
+        cw.get_metric_data.return_value = {"MetricDataResults": []}
+        cross_account_stub.get_aws_client.side_effect = (
+            lambda service, region_name=None, **kw: cw if service == "cloudwatch" else lambda_client
+        )
+        zip_bytes = _make_zip({"index.js": "const AWS = require('aws-sdk');\n"})
+        with patch.object(handler.urllib3, "PoolManager") as pm:
+            pm.return_value.request.return_value = MagicMock(status=200, data=zip_bytes)
+            result = handler.handle_generate_upgrade_analysis({"regions": ["us-east-1"]})
+
+        assert "report_markdown" in result
+        md = result["report_markdown"]
+        assert "orders" in md
+        assert "Migrate to modular AWS SDK v3" in md  # code rec present in rendered md

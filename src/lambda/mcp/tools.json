@@ -1607,9 +1607,32 @@
             "lambda:ListFunctions",
             "lambda:GetFunction",
             "lambda:GetFunctionConfiguration",
-            "ec2:DescribeRegions"
+            "ec2:DescribeRegions",
+            "cloudwatch:GetMetricData"
         ],
         "tools": [
+            {
+                "name": "generate_upgrade_analysis",
+                "description": "ONE-SHOT fast path for upgrade reports. In a single call, discovers regions (or uses the ones you pass), scans them all in parallel for deprecated/EOL functions, enriches each with an effort bucket (green=direct flip / yellow=dependency-or-native rebuild / red=SDK migration), a test-artifact flag, and days-since-last-invocation (CloudWatch), then downloads code for the top code-change-risk functions and runs deterministic breaking-change detection. Returns a pre-analyzed dataset: summary (counts by priority/effort/region/runtime), deletion_candidates (test/idle functions), grouping (quick_wins/dependency_rebuilds/sdk_migrations), top_inventory (capped sample), and detailed_analysis (per-function code findings with file/line/fix). PREFER THIS over calling other tools separately — it is far faster and avoids many round-trips. Render the report from the counts and groups; do NOT print every function individually.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "regions": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Regions to scan (e.g., ['us-east-1','eu-west-1']). Omit to auto-discover all regions with Lambda functions."
+                        },
+                        "max_functions_to_analyze": {
+                            "type": "integer",
+                            "description": "How many top-priority functions to download code for and deep-analyze (default: 5, max: 10). Others get inventory-only entries."
+                        },
+                        "include_approaching_deprecation": {
+                            "type": "boolean",
+                            "description": "Include functions approaching deprecation within 6 months (default: true)."
+                        }
+                    }
+                }
+            },
             {
                 "name": "discover_lambda_regions",
                 "description": "Discover which AWS regions have Lambda functions deployed. Scans all enabled regions in parallel and returns each region's function count plus how many are on deprecated or end-of-life runtimes. Use this FIRST to let the user choose which regions to include in a report.",
