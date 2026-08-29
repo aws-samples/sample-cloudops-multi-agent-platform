@@ -17,15 +17,25 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 from datetime import datetime, timezone
 from typing import Any
 
 import boto3
+from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
 
 logger = logging.getLogger(__name__)
 
 _memory_client = None
+_dynamodb_client = None
+_SERIALIZER = TypeSerializer()
+_DESERIALIZER = TypeDeserializer()
+_INVESTIGATIONS_TABLE_NAME = os.environ.get("INVESTIGATIONS_TABLE_NAME", "")
+_INVESTIGATION_REF_RE = re.compile(
+    r"\n?<investigation-ref>(.*?)</investigation-ref>",
+    re.DOTALL,
+)
 
 # AgentCore Memory rejects any single conversational event whose text exceeds
 # 100,000 chars (CreateEvent ValidationException). A large report follow-up —
@@ -33,6 +43,41 @@ _memory_client = None
 # this; the event was then dropped entirely and the turn vanished on reload.
 # Keep a margin under the hard cap for the role/JSON envelope overhead.
 _MAX_EVENT_TEXT = 96_000
+_OMITTED_TOOL_OUTPUT = "[tool output omitted from chat memory]"
+
+
+def _compact_tool_block(block: str) -> str:
+    """Keep trace names and inputs while dropping oversized result payloads."""
+    try:
+        inner = block[len("<tool>") : -len("</tool>")]
+        parsed = json.loads(inner)
+    except (TypeError, ValueError):
+        return '<tool>{"truncated":true}</tool>'
+
+    def compact(node: Any) -> Any:
+        if isinstance(node, list):
+            return [compact(item) for item in node]
+        if not isinstance(node, dict):
+            return node
+        output: dict[str, Any] = {}
+        for key, value in node.items():
+            if key == "output":
+                output[key] = _OMITTED_TOOL_OUTPUT
+            elif key == "tool_trace":
+                output[key] = compact(value)
+            elif key in {
+                "name",
+                "tool_name",
+                "tool_use_id",
+                "input",
+                "status",
+                "duration_s",
+            }:
+                output[key] = value
+        return output
+
+    compacted = json.dumps(compact(parsed), separators=(",", ":"))
+    return f"<tool>{compacted}</tool>"
 
 # Structured UI the frontend rehydrates on reload is persisted in its OWN
 # compact tags (<visualizer-state>, <report-body>, <artifact>, <report-pending>,
@@ -54,25 +99,39 @@ def _fit_event_text(text: str) -> str:
     tool_re = re.compile(r"<tool>[\s\S]*?</tool>", re.DOTALL)
     placeholder = '<tool>{"truncated":true}</tool>'
 
-    blocks = sorted(tool_re.finditer(text), key=lambda m: m.end() - m.start(), reverse=True)
-    for m in blocks:
-        if len(text) <= _MAX_EVENT_TEXT:
+    while len(text) > _MAX_EVENT_TEXT:
+        blocks = [
+            match
+            for match in tool_re.finditer(text)
+            if match.group(0) != placeholder
+        ]
+        if not blocks:
             break
-        if m.group(0) == placeholder:
-            continue
-        text = text[: m.start()] + placeholder + text[m.end():]
+        match = max(blocks, key=lambda item: item.end() - item.start())
+        replacement = _compact_tool_block(match.group(0))
+        if len(replacement) >= len(match.group(0)):
+            replacement = placeholder
+        text = text[: match.start()] + replacement + text[match.end() :]
 
     # Absolute last resort — no <tool> blocks left and still over (e.g. a giant
-    # report body). Hard-cut the head, but ALWAYS keep a trailing
-    # <visualizer-state> tag (wherever it sits) so the card still rehydrates —
-    # it's small and load-bearing; the report body is what's oversized.
+    # report body). Hard-cut the head, but keep compact UI state so cards still
+    # rehydrate even when their raw tool traces are gone.
     if len(text) > _MAX_EVENT_TEXT:
-        viz_m = re.search(r"<visualizer-state>[\s\S]*</visualizer-state>\s*$", text)
+        protected_re = re.compile(
+            r"<(?:visualizer-state|investigation-ref)>[\s\S]*?</"
+            r"(?:visualizer-state|investigation-ref)>",
+            re.DOTALL,
+        )
+        protected = []
+        for match in protected_re.finditer(text):
+            if match.group(0) not in protected:
+                protected.append(match.group(0))
+        body = protected_re.sub("", text)
+        suffix = "\n".join(protected)
         marker = "\n[…truncated for storage…]\n"
-        if viz_m and len(viz_m.group(0)) + len(marker) < _MAX_EVENT_TEXT:
-            viz = viz_m.group(0)
-            head_budget = _MAX_EVENT_TEXT - len(viz) - len(marker)
-            text = text[:head_budget] + marker + viz
+        if suffix and len(suffix) + len(marker) < _MAX_EVENT_TEXT:
+            head_budget = _MAX_EVENT_TEXT - len(suffix) - len(marker)
+            text = body[:head_budget] + marker + suffix
         else:
             text = text[: _MAX_EVENT_TEXT - 40] + "\n[…truncated for storage…]"
     return text
@@ -83,6 +142,165 @@ def _get_client(region: str = "us-east-1"):
     if _memory_client is None:
         _memory_client = boto3.client("bedrock-agentcore", region_name=region)
     return _memory_client
+
+
+def _get_dynamodb_client(region: str = "us-east-1"):
+    global _dynamodb_client
+    if _dynamodb_client is None:
+        _dynamodb_client = boto3.client("dynamodb", region_name=region)
+    return _dynamodb_client
+
+
+def _investigation_id(raw_reference: str) -> str:
+    try:
+        reference = json.loads(raw_reference)
+    except (TypeError, ValueError):
+        return ""
+    investigation_id = reference.get("investigationId")
+    return investigation_id.strip() if isinstance(investigation_id, str) else ""
+
+
+def _compact_investigation_context(meta: dict[str, Any]) -> str:
+    """Return the persisted investigation projection intended for model context."""
+
+    def item(value: Any) -> dict[str, str] | None:
+        if not isinstance(value, dict):
+            return None
+        compact = {
+            key: str(value[key]).strip()[:limit]
+            for key, limit in (("title", 240), ("description", 3000))
+            if value.get(key)
+        }
+        return compact or None
+
+    outcome = meta.get("outcome")
+    outcome = outcome if isinstance(outcome, dict) else {}
+    mitigation = outcome.get("mitigation")
+    compact_mitigation = None
+    if isinstance(mitigation, dict):
+        compact_mitigation = {
+            key: value
+            for key, value in {
+                "status": str(mitigation.get("status", "")).strip()[:80],
+                "terminal": bool(mitigation.get("terminal", False)),
+                "action": str(mitigation.get("action", "")).strip()[:1000],
+                "description": str(mitigation.get("description", "")).strip()[:3000],
+            }.items()
+            if value not in ("", None)
+        }
+
+    context = {
+        "investigationId": str(meta.get("investigationId", "")),
+        "title": str(meta.get("requestTitle", "DevOps Agent investigation"))[:400],
+        "workflowState": str(meta.get("workflowState", "")),
+        "providerStatus": str(meta.get("providerStatus", "")),
+        "incident": item(outcome.get("incident")),
+        "rootCause": item(outcome.get("rootCause")),
+        "mitigation": compact_mitigation,
+    }
+    compact = {key: value for key, value in context.items() if value is not None}
+    return (
+        "<investigation-context>"
+        + json.dumps(compact, separators=(",", ":"), ensure_ascii=True)
+        + "</investigation-context>"
+    )
+
+
+def _load_investigations(
+    investigation_ids: set[str], region: str
+) -> dict[str, dict[str, Any]]:
+    if not investigation_ids or not _INVESTIGATIONS_TABLE_NAME:
+        return {}
+    client = _get_dynamodb_client(region)
+    found: dict[str, dict[str, Any]] = {}
+    ids = sorted(investigation_ids)
+    for start in range(0, len(ids), 100):
+        request = {
+            _INVESTIGATIONS_TABLE_NAME: {
+                "Keys": [
+                    {
+                        "PK": _SERIALIZER.serialize(f"INV#{investigation_id}"),
+                        "SK": _SERIALIZER.serialize("META"),
+                    }
+                    for investigation_id in ids[start : start + 100]
+                ],
+                "ProjectionExpression": (
+                    "investigationId, requestTitle, workflowState, providerStatus, "
+                    "outcome"
+                ),
+                "ConsistentRead": True,
+            }
+        }
+        for _ in range(3):
+            response = client.batch_get_item(RequestItems=request)
+            for raw in response.get("Responses", {}).get(
+                _INVESTIGATIONS_TABLE_NAME, []
+            ):
+                meta = {
+                    key: _DESERIALIZER.deserialize(value)
+                    for key, value in raw.items()
+                }
+                investigation_id = str(meta.get("investigationId", ""))
+                if investigation_id:
+                    found[investigation_id] = meta
+            unprocessed = response.get("UnprocessedKeys", {}).get(
+                _INVESTIGATIONS_TABLE_NAME
+            )
+            if not unprocessed:
+                break
+            request = {_INVESTIGATIONS_TABLE_NAME: unprocessed}
+    return found
+
+
+def _hydrate_investigation_contexts(
+    messages: list[dict], region: str
+) -> list[dict]:
+    """Replace UI references with the latest compact, authoritative projection."""
+    references: list[tuple[int, str]] = []
+    for index, message in enumerate(messages):
+        if message.get("role") != "assistant":
+            continue
+        text = message["content"][0]["text"]
+        for match in _INVESTIGATION_REF_RE.finditer(text):
+            investigation_id = _investigation_id(match.group(1))
+            if investigation_id:
+                references.append((index, investigation_id))
+    if not references or not _INVESTIGATIONS_TABLE_NAME:
+        return messages
+
+    try:
+        investigations = _load_investigations(
+            {investigation_id for _, investigation_id in references}, region
+        )
+    except Exception as exc:
+        logger.warning("Failed to hydrate investigation context: %s", exc)
+        return messages
+
+    last_message = {
+        investigation_id: index for index, investigation_id in references
+    }
+    emitted: set[str] = set()
+    hydrated = []
+    for index, message in enumerate(messages):
+        text = message["content"][0]["text"]
+        if message.get("role") != "assistant":
+            hydrated.append(message)
+            continue
+
+        def replace(match: re.Match) -> str:
+            investigation_id = _investigation_id(match.group(1))
+            meta = investigations.get(investigation_id)
+            if not meta:
+                return match.group(0)
+            if index != last_message[investigation_id] or investigation_id in emitted:
+                return ""
+            emitted.add(investigation_id)
+            return "\n" + _compact_investigation_context(meta)
+
+        text = _INVESTIGATION_REF_RE.sub(replace, text).strip()
+        if text:
+            hydrated.append({**message, "content": [{"text": text}]})
+    return hydrated
 
 
 def load_history(
@@ -159,6 +377,7 @@ def load_history(
                 role = "assistant" if role_raw == "ASSISTANT" else "user"
                 messages.append({"role": role, "content": [{"text": text}]})
 
+        messages = _hydrate_investigation_contexts(messages, region)
         logger.info(
             "Loaded %d history messages for session %s", len(messages), session_id[:20]
         )
@@ -283,6 +502,12 @@ def build_enriched_text(ordered_segments: list[dict]) -> str:
             flush_text()
             flush_thinking()
             enriched_parts.append(f'<visualizer-state>{seg["value"]}</visualizer-state>')
+        elif seg_type == "investigation_ref":
+            flush_text()
+            flush_thinking()
+            enriched_parts.append(
+                f'<investigation-ref>{seg["value"]}</investigation-ref>'
+            )
 
     flush_text()
     flush_thinking()

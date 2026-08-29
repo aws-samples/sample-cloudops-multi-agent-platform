@@ -56,6 +56,15 @@ locals {
     "model/default_id"                           = { type = "String", value = var.bedrock_model_id }
     "model/health_enrichment_id"                 = { type = "String", value = var.health_enrichment_model_id }
     "memory/id"                                  = { type = "String", value = var.memory_id }
+    "devops_agent/space_id"                      = { type = "String", value = var.devops_agent_space_id }
+    "devops_agent/space_region"                  = { type = "String", value = var.devops_agent_space_region }
+    "devops_agent/integration_enabled"           = { type = "String", value = tostring(var.devops_agent_integration_enabled) }
+    "devops_agent/health_automatic_enabled"      = { type = "String", value = tostring(var.devops_agent_health_automatic_enabled) }
+    "devops_agent/max_concurrency"               = { type = "String", value = tostring(var.devops_agent_max_concurrency) }
+    "devops_agent/automatic_daily_budget"        = { type = "String", value = tostring(var.devops_agent_automatic_daily_budget) }
+    "devops_agent/max_age_minutes"               = { type = "String", value = tostring(var.devops_agent_max_age_minutes) }
+    "devops_agent/sweep_interval_minutes"        = { type = "String", value = tostring(var.devops_agent_sweep_interval_minutes) }
+    "devops_agent/coverage_cache_ttl_seconds"    = { type = "String", value = tostring(var.devops_agent_coverage_cache_ttl_seconds) }
   }
 }
 

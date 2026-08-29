@@ -99,3 +99,8 @@ output "frontend_api_url" {
   description = "Frontend API Gateway URL for session/template/report CRUD"
   value       = try(module.frontend_api[0].api_url, "")
 }
+
+output "devops_agent_investigations_table_name" {
+  description = "Generic DevOps Agent investigations table name."
+  value       = try(module.devops_agent_integration[0].table_name, "")
+}

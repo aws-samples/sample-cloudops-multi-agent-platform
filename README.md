@@ -51,9 +51,14 @@ sync), see [docs/architecture.md](docs/architecture.md).
 
 - **Hierarchical agent orchestration** with memory, follow-up
   suggestions, and structured reports.
-- **9 AWS tools** wired through AgentCore Gateway: Cost Explorer, CUR
+- **11 AWS tools** wired through AgentCore Gateway: Cost Explorer, CUR
   (Athena), Cost Optimization Hub, Billing/Anomalies, Pricing, Health
-  Events, Network Resilience, Tag Governance, Lambda Runtime.
+  Events, Network Resilience, Tag Governance, Lambda Runtime, CloudWatch,
+  and AWS DevOps Agent.
+- **AWS DevOps Agent investigations** for explicitly requested Health events
+  and CloudWatch alarm incidents, with durable conversation cards, a compact
+  activity panel, and mitigation outcomes. The deployment flow asks for the
+  target Agent Space ID; no account or Agent Space ID is embedded in source.
 - **Health events pipeline** with rules-based risk scoring, Claude
   Haiku 4.5 narrative enrichment, and optional Organisation-wide view
   for 1000+ account orgs. See

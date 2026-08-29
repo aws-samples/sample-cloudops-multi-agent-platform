@@ -237,6 +237,8 @@ _ANSWER_TO_TFVAR = {
     "MODEL_DEFAULT_ID":                      "bedrock_model_id",
     "MODEL_HEALTH_ENRICHMENT_ID":            "health_enrichment_model_id",
     "CROSS_ACCOUNT_HEALTH_ROLE_ARN":         "health_events_cross_account_role_arn",
+    "DEVOPS_AGENT_SPACE_ID":                 "devops_agent_space_id",
+    "DEVOPS_AGENT_SPACE_REGION":             "devops_agent_space_region",
     # Imported from SSM as GATEWAY_JWT_VALIDATION_CLAIM (path gateway/jwt_validation_claim);
     # Terraform expects the root var name jwt_validation_claim.
     "GATEWAY_JWT_VALIDATION_CLAIM":          "jwt_validation_claim",
@@ -244,6 +246,26 @@ _ANSWER_TO_TFVAR = {
 for ans_key, tf_key in _ANSWER_TO_TFVAR.items():
     if ans_key in answers:
         existing[tf_key] = answers[ans_key]
+
+for ans_key, tf_key in {
+    "DEVOPS_AGENT_INTEGRATION_ENABLED":      "devops_agent_integration_enabled",
+    "DEVOPS_AGENT_HEALTH_AUTOMATIC_ENABLED": "devops_agent_health_automatic_enabled",
+}.items():
+    if ans_key in answers:
+        existing[tf_key] = answers[ans_key].lower() == "true"
+
+for ans_key, tf_key in {
+    "DEVOPS_AGENT_MAX_CONCURRENCY":            "devops_agent_max_concurrency",
+    "DEVOPS_AGENT_AUTOMATIC_DAILY_BUDGET":     "devops_agent_automatic_daily_budget",
+    "DEVOPS_AGENT_MAX_AGE_MINUTES":             "devops_agent_max_age_minutes",
+    "DEVOPS_AGENT_SWEEP_INTERVAL_MINUTES":      "devops_agent_sweep_interval_minutes",
+    "DEVOPS_AGENT_COVERAGE_CACHE_TTL_SECONDS":  "devops_agent_coverage_cache_ttl_seconds",
+}.items():
+    if ans_key in answers:
+        try:
+            existing[tf_key] = int(answers[ans_key])
+        except (ValueError, TypeError):
+            pass
 
 # log_retention_days is numeric — write it into the tfvars as an int so the
 # tfvar (used by the Terraform-managed log groups) and SSM (read by the

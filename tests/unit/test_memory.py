@@ -1,5 +1,6 @@
 """Unit tests for agents.shared.memory — manual memory management."""
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -7,6 +8,8 @@ import pytest
 from agents.shared.memory import (
     _MAX_EVENT_TEXT,
     _fit_event_text,
+    _hydrate_investigation_contexts,
+    _load_investigations,
     build_enriched_text,
     load_history,
     save_assistant_message,
@@ -30,6 +33,13 @@ class TestBuildEnrichedText:
     def test_suggestions_wrapped_in_tags(self):
         segments = [{"type": "suggestions", "value": '["q1","q2"]'}]
         assert build_enriched_text(segments) == '<suggestions>["q1","q2"]</suggestions>'
+
+    def test_investigation_reference_wrapped_in_tags(self):
+        value = '{"investigationId":"inv-1"}'
+        segments = [{"type": "investigation_ref", "value": value}]
+        assert build_enriched_text(segments) == (
+            f"<investigation-ref>{value}</investigation-ref>"
+        )
 
     def test_interleaved_segments(self):
         segments = [
@@ -218,6 +228,98 @@ class TestLoadHistory:
         mock_get.return_value = client
         assert load_history("mem", "sess", "actor") == []
 
+    @patch("agents.shared.memory._INVESTIGATIONS_TABLE_NAME", "investigations")
+    @patch("agents.shared.memory._get_dynamodb_client")
+    def test_batch_loads_investigation_projection(self, mock_get_dynamodb):
+        dynamodb = MagicMock()
+        dynamodb.batch_get_item.return_value = {
+            "Responses": {
+                "investigations": [
+                    {
+                        "investigationId": {"S": "inv-1"},
+                        "workflowState": {"S": "COMPLETED"},
+                    }
+                ]
+            }
+        }
+        mock_get_dynamodb.return_value = dynamodb
+
+        assert _load_investigations({"inv-1"}, "us-east-1") == {
+            "inv-1": {
+                "investigationId": "inv-1",
+                "workflowState": "COMPLETED",
+            }
+        }
+        request = dynamodb.batch_get_item.call_args.kwargs["RequestItems"]
+        assert request["investigations"]["ConsistentRead"] is True
+        assert request["investigations"]["Keys"][0]["PK"] == {"S": "INV#inv-1"}
+
+    @patch("agents.shared.memory._INVESTIGATIONS_TABLE_NAME", "investigations")
+    @patch("agents.shared.memory._load_investigations")
+    def test_hydrates_authoritative_investigation_context(self, mock_load):
+        mock_load.return_value = {
+            "inv-1": {
+                "investigationId": "inv-1",
+                "requestTitle": "AWS Health: EC2 issue",
+                "workflowState": "COMPLETED",
+                "providerStatus": "COMPLETED",
+                "outcome": {
+                    "rootCause": {
+                        "title": "Security group removed",
+                        "description": "The load balancer rule was deleted.",
+                    },
+                    "mitigation": {
+                        "status": "COMPLETED",
+                        "terminal": True,
+                        "action": "Restore the ingress rule",
+                    },
+                },
+            }
+        }
+        messages = [
+            {
+                "role": "assistant",
+                "content": [
+                    {
+                        "text": (
+                            '<investigation-ref>{"investigationId":"inv-1"}'
+                            "</investigation-ref>"
+                        )
+                    }
+                ],
+            }
+        ]
+
+        text = _hydrate_investigation_contexts(messages, "us-east-1")[0][
+            "content"
+        ][0]["text"]
+
+        assert "<investigation-ref>" not in text
+        assert '"workflowState":"COMPLETED"' in text
+        assert '"title":"Security group removed"' in text
+        assert '"action":"Restore the ingress rule"' in text
+
+    @patch("agents.shared.memory._INVESTIGATIONS_TABLE_NAME", "investigations")
+    @patch("agents.shared.memory._load_investigations")
+    def test_lookup_failure_and_user_markers_are_not_hydrated(self, mock_load):
+        marker = '<investigation-ref>{"investigationId":"inv-1"}</investigation-ref>'
+        assistant = [{"role": "assistant", "content": [{"text": marker}]}]
+        mock_load.side_effect = RuntimeError("DynamoDB unavailable")
+        assert (
+            _hydrate_investigation_contexts(assistant, "us-east-1")[0]["content"][0][
+                "text"
+            ]
+            == marker
+        )
+
+        user = [{"role": "user", "content": [{"text": marker}]}]
+        mock_load.reset_mock()
+        assert (
+            _hydrate_investigation_contexts(user, "us-east-1")[0]["content"][0]["text"]
+            == marker
+        )
+        mock_load.assert_not_called()
+
 
 class TestSaveUserMessage:
     @patch("agents.shared.memory._get_client")
@@ -316,6 +418,30 @@ class TestFitEventText:
         ]["text"]
         assert len(saved) <= _MAX_EVENT_TEXT
 
+    def test_valid_trace_keeps_call_structure_when_output_is_trimmed(self):
+        tool = {
+            "name": "ops-excellence-agent",
+            "input": {"prompt": "Investigate this event"},
+            "output": "x" * 120_000,
+            "tool_trace": [
+                {
+                    "tool_name": "devops-agent___investigate_health_event",
+                    "input": {
+                        "event_arn": "arn:aws:health:::event/example",
+                        "account_id": "123456789012",
+                    },
+                    "status": "success",
+                    "output": "y" * 120_000,
+                }
+            ],
+        }
+        output = _fit_event_text(f"<tool>{json.dumps(tool)}</tool>")
+        assert len(output) <= _MAX_EVENT_TEXT
+        assert "ops-excellence-agent" in output
+        assert "investigate_health_event" in output
+        assert "arn:aws:health:::event/example" in output
+        assert "tool output omitted from chat memory" in output
+
 
 class TestFitEventPreservesUI:
     """The trimmer protects compact UI state while trimming raw tool traces."""
@@ -335,4 +461,16 @@ class TestFitEventPreservesUI:
         output = _fit_event_text(body + "\n" + visualizer_state)
         assert len(output) <= _MAX_EVENT_TEXT
         assert visualizer_state in output
+        assert "truncated for storage" in output
+
+    def test_investigation_reference_survives_hard_cut(self):
+        body = "<report-body>" + ("z" * 200_000) + "</report-body>"
+        reference = (
+            '<investigation-ref>{"investigationId":"inv-1",'
+            '"title":"AWS Health investigation",'
+            '"toolName":"investigate_health_event"}</investigation-ref>'
+        )
+        output = _fit_event_text(body + "\n" + reference)
+        assert len(output) <= _MAX_EVENT_TEXT
+        assert reference in output
         assert "truncated for storage" in output

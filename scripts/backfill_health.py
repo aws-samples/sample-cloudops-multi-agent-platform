@@ -152,7 +152,18 @@ def _describe_events_org(health, start_time_utc):
     return events
 
 
-def _enrich_event_details(health, event, org_mode: bool):
+def _affected_accounts_for_event(health, event_arn: str) -> list[str]:
+    """Return every documented affected account for an organization event."""
+    paginator = health.get_paginator("describe_affected_accounts_for_organization")
+    accounts = []
+    for page in paginator.paginate(eventArn=event_arn):
+        accounts.extend(page.get("affectedAccounts", []))
+    return list(dict.fromkeys(accounts))
+
+
+def _enrich_event_details(
+    health, event, org_mode: bool, affected_account: str | None = None
+):
     """Fetch description + affected entities for one event.
 
     The `events` list only has summary fields — description and affected
@@ -162,20 +173,21 @@ def _enrich_event_details(health, event, org_mode: bool):
     # Normalise arn key: DescribeEvents returns `arn`, EventBridge uses `eventArn`.
     event_arn = event.get("arn") or event.get("eventArn", "")
 
-    detail_filter = (
-        {"organizationEventDetailFilters": [{"eventArn": event_arn}]}
-        if org_mode
-        else {"eventArns": [event_arn]}
-    )
     details_method = (
         health.describe_event_details_for_organization
         if org_mode
         else health.describe_event_details
     )
     try:
-        details_resp = details_method(**detail_filter) if org_mode else details_method(
-            eventArns=[event_arn]
-        )
+        if org_mode:
+            event_filter = {"eventArn": event_arn}
+            if affected_account:
+                event_filter["awsAccountId"] = affected_account
+            details_resp = details_method(
+                organizationEventDetailFilters=[event_filter]
+            )
+        else:
+            details_resp = details_method(eventArns=[event_arn])
         successful = details_resp.get("successfulSet", [])
         description = ""
         if successful:
@@ -186,7 +198,6 @@ def _enrich_event_details(health, event, org_mode: bool):
         description = ""
 
     # Affected entities (resources)
-    entities_filter = {"eventArns": [event_arn]}
     entities_method = (
         health.describe_affected_entities_for_organization
         if org_mode
@@ -195,23 +206,20 @@ def _enrich_event_details(health, event, org_mode: bool):
     affected_entities = []
     try:
         if org_mode:
-            # Org-mode requires per-account fan-out; first get affected accounts
-            accts_resp = health.describe_affected_accounts_for_organization(
-                eventArn=event_arn
+            entity_filter = {"eventArn": event_arn}
+            if affected_account:
+                entity_filter["awsAccountId"] = affected_account
+            paginator = health.get_paginator(
+                "describe_affected_entities_for_organization"
             )
-            affected_accounts = accts_resp.get("affectedAccounts", [])
-            for acct in affected_accounts:
-                per_acct = entities_method(
-                    organizationEntityFilters=[
-                        {"eventArn": event_arn, "awsAccountId": acct}
-                    ]
-                )
-                for ent in per_acct.get("entities", []):
-                    ent["awsAccountId"] = acct  # ensure field present
-                    affected_entities.append(ent)
+            for page in paginator.paginate(
+                organizationEntityFilters=[entity_filter]
+            ):
+                affected_entities.extend(page.get("entities", []))
         else:
-            ents_resp = entities_method(filter={"eventArns": [event_arn]})
-            affected_entities = ents_resp.get("entities", [])
+            paginator = health.get_paginator("describe_affected_entities")
+            for page in paginator.paginate(filter={"eventArns": [event_arn]}):
+                affected_entities.extend(page.get("entities", []))
     except ClientError as e:
         logger.warning(f"DescribeAffectedEntities failed for {event_arn}: {e}")
 
@@ -226,16 +234,22 @@ def _enrich_event_details(health, event, org_mode: bool):
         "startTime": str(event.get("startTime", "")),
         "lastUpdatedTime": str(event.get("lastUpdatedTime", "")),
         "statusCode": event.get("statusCode", "open"),
+        "actionability": event.get("actionability", ""),
+        "personas": event.get("personas", []),
+        "communicationId": event.get("communicationId", ""),
+        "page": event.get("page"),
+        "totalPages": event.get("totalPages"),
         "eventRegion": event.get("region", "global"),
         "eventDescription": {"latestDescription": description},
         "affectedEntities": [
             {
                 "entityValue": ent.get("entityValue", ""),
-                "awsAccountId": ent.get("awsAccountId", ""),
             }
             for ent in affected_entities
         ],
     }
+    if affected_account:
+        detail["affectedAccount"] = affected_account
     return detail
 
 
@@ -300,9 +314,28 @@ def backfill(days: int, org_mode: bool, role_arn: str | None, dry_run: bool) -> 
     t0 = time.monotonic()
     for i, ev in enumerate(events, 1):
         try:
-            detail = _enrich_event_details(health, ev, org_mode)
-            envelope = _envelope_for_event(ev, account_id)
-            handler._process_health_event(detail, envelope, table)
+            if org_mode:
+                event_arn = ev.get("arn") or ev.get("eventArn", "")
+                affected_accounts = _affected_accounts_for_event(
+                    health, event_arn
+                )
+                if not affected_accounts:
+                    logger.warning(
+                        "No affected accounts returned for organization event %s",
+                        event_arn,
+                    )
+                for affected_account in affected_accounts:
+                    detail = _enrich_event_details(
+                        health, ev, True, affected_account
+                    )
+                    envelope = _envelope_for_event(ev, account_id)
+                    handler._process_health_event(detail, envelope, table)
+            else:
+                detail = _enrich_event_details(
+                    health, ev, False, account_id
+                )
+                envelope = _envelope_for_event(ev, account_id)
+                handler._process_health_event(detail, envelope, table)
             ok += 1
         except Exception as e:
             logger.error(

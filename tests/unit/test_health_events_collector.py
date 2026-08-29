@@ -413,8 +413,11 @@ class TestProcessHealthEvent:
         assert written["accountId"] == "123456789012"
         assert written["eventScopeCode"] == "ACCOUNT_SPECIFIC"
         assert written["riskLevel"] == "CRITICAL"
+        assert "ttl" not in written
 
-    def test_multi_account_event_writes_one_row_per_account(self, table_mock, monkeypatch):
+    def test_affected_account_wins_over_entity_account_ids(
+        self, table_mock, monkeypatch
+    ):
         monkeypatch.setattr(handler, "ENRICHMENT_MODEL_ID", "")
         monkeypatch.setattr(handler, "_get_account_name", lambda aid: f"acct-{aid}")
 
@@ -424,6 +427,12 @@ class TestProcessHealthEvent:
             "eventTypeCategory": "scheduledChange",
             "eventScopeCode": "ACCOUNT_SPECIFIC",
             "statusCode": "upcoming",
+            "actionability": "ACTION_REQUIRED",
+            "personas": ["OPERATIONS"],
+            "communicationId": "comm-1",
+            "page": 1,
+            "totalPages": 2,
+            "affectedAccount": "222222222222",
             "startTime": "2099-06-01T00:00:00Z",
             "lastUpdatedTime": "2099-01-01T00:00:00Z",
             "eventDescription": {"latestDescription": "multi-account scheduled event"},
@@ -437,13 +446,36 @@ class TestProcessHealthEvent:
 
         handler._process_health_event(detail, envelope, table_mock)
 
-        # Two unique accounts, two rows
-        assert table_mock.put_item.call_count == 2
-        written_accts = {
-            call.kwargs["Item"]["accountId"]
-            for call in table_mock.put_item.call_args_list
+        assert table_mock.put_item.call_count == 1
+        written = table_mock.put_item.call_args.kwargs["Item"]
+        assert written["accountId"] == "222222222222"
+        assert written["actionability"] == "ACTION_REQUIRED"
+        assert written["personas"] == ["OPERATIONS"]
+        assert written["communicationId"] == "comm-1"
+        assert written["page"] == 1
+        assert written["totalPages"] == 2
+        assert "ttl" not in written
+
+    def test_closed_event_has_retention_ttl(self, table_mock, monkeypatch):
+        monkeypatch.setattr(handler, "ENRICHMENT_MODEL_ID", "")
+        monkeypatch.setattr(handler, "_get_account_name", lambda aid: f"acct-{aid}")
+        detail = {
+            "eventArn": "arn:aws:health:us-east-1::event/EC2/CLOSED/001",
+            "service": "EC2",
+            "eventTypeCategory": "issue",
+            "statusCode": "closed",
+            "lastUpdatedTime": "2026-08-01T00:00:00Z",
+            "eventDescription": {"latestDescription": "resolved"},
         }
-        assert written_accts == {"111111111111", "222222222222"}
+
+        handler._process_health_event(
+            detail,
+            {"account": "123456789012", "region": "us-east-1"},
+            table_mock,
+        )
+
+        written = table_mock.put_item.call_args.kwargs["Item"]
+        assert written["ttl"] > 0
 
     def test_missing_event_arn_is_silently_skipped(self, table_mock):
         detail = {"service": "EC2", "eventTypeCategory": "issue"}  # no eventArn

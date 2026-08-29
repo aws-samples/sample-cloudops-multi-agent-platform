@@ -127,7 +127,7 @@ class TestCloudwatchAgentConfig:
 
     def test_cloudwatch_agent_tools(self, hierarchy):
         entry = hierarchy["cloudwatch-agent"]
-        assert entry["tools"] == ["cloudwatch"]
+        assert entry["tools"] == ["cloudwatch", "devops-agent"]
 
 
 class TestCloudwatchAgentPrompt:
@@ -173,6 +173,14 @@ class TestCloudwatchAgentPrompt:
         assert "tags mode" in lowered
         assert "threshold tuning" in lowered
         assert "calibrates selected thresholds" in lowered
+
+    def test_explicit_incident_can_start_advisory_investigation(self, prompt):
+        lowered = prompt.lower()
+        assert "investigate_operational_issue" in prompt
+        assert "alarm_arn + '#' + state_updated_timestamp" in prompt
+        assert "explicitly asks to investigate" in lowered
+        assert "advisory-only" in lowered
+        assert "never approve a pending customer action" in lowered
 
     def test_response_format_uses_typed_artifact_delivery(self, prompt):
         assert "prepare_alarm_deployment once" in prompt.lower()

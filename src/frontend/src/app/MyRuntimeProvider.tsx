@@ -10,8 +10,16 @@ import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { isAuthenticated, isDevBypass, login, handleCallback, getToken, getActorId } from "@/lib/auth";
 import { extractVisualizerState, extractVisualizerStateFromMemory } from "@/lib/visualizer-state";
+import {
+  extractInvestigationReferences,
+  extractInvestigationReferencesFromMemory,
+  INVESTIGATION_KICKOFF_TOOL_NAMES,
+  type InvestigationReference,
+} from "@/lib/investigation-result";
 import { EditingReportProvider } from "@/lib/editing-report-context";
 import { markReportModeMessage } from "@/lib/report-mode-messages";
+
+const autoOpenedInvestigations = new Set<string>();
 
 const MyModelAdapter: ChatModelAdapter = {
   async *run({ messages, abortSignal }) {
@@ -295,6 +303,7 @@ const MyModelAdapter: ChatModelAdapter = {
                   segments.push({ kind: "visualizer_state", value: JSON.stringify(vizState), startMs: Date.now() });
                 }
               }
+              addInvestigationSegment(segments, tc.name, resultContent, true);
             }
             yield { content: buildContent(segments, true, isReportMode) };
           }
@@ -335,6 +344,13 @@ const MyModelAdapter: ChatModelAdapter = {
                 }
               }
             }
+            const investigationToolText = segments
+              .filter((segment) => segment.kind === "tool")
+              .map((segment) => `<tool>${segment.value}</tool>`)
+              .join("\n");
+            for (const reference of extractInvestigationReferencesFromMemory(investigationToolText)) {
+              addInvestigationReference(segments, reference, false);
+            }
             yield { content: buildContent(segments, false, isReportMode) };
             streamDone();
             return;
@@ -373,6 +389,7 @@ const MyModelAdapter: ChatModelAdapter = {
             if (toolIdx >= 0) {
               segments[toolIdx].value = JSON.stringify({ name: data.name, input: data.input ?? {}, output: data.output ?? "" });
             }
+            addInvestigationSegment(segments, data.name || "", data.output ?? "", true);
             yield { content: buildContent(segments, true, isReportMode) };
           }
           else if (eventType === "complete" || eventType === "suggestions") {
@@ -421,7 +438,53 @@ const MyModelAdapter: ChatModelAdapter = {
   },
 };
 
-type Segment = { kind: "reasoning" | "tool" | "text" | "suggestions" | "artifact_meta" | "report_body" | "visualizer_state" | "report_pending"; value: string; startMs: number };
+type Segment = { kind: "reasoning" | "tool" | "text" | "suggestions" | "artifact_meta" | "report_body" | "visualizer_state" | "report_pending" | "investigation_ref"; value: string; startMs: number };
+
+function addInvestigationReference(
+  segments: Segment[],
+  reference: InvestigationReference,
+  autoOpen: boolean,
+): void {
+  const exists = segments.some((segment) => {
+    if (segment.kind !== "investigation_ref") return false;
+    try {
+      return (JSON.parse(segment.value) as InvestigationReference).investigationId === reference.investigationId;
+    } catch {
+      return false;
+    }
+  });
+  if (!exists) {
+    segments.push({
+      kind: "investigation_ref",
+      value: JSON.stringify(reference),
+      startMs: Date.now(),
+    });
+  }
+  if (
+    autoOpen &&
+    INVESTIGATION_KICKOFF_TOOL_NAMES.has(reference.toolName) &&
+    !autoOpenedInvestigations.has(reference.investigationId) &&
+    typeof window !== "undefined"
+  ) {
+    autoOpenedInvestigations.add(reference.investigationId);
+    window.dispatchEvent(
+      new CustomEvent("open-investigation", {
+        detail: { investigationId: reference.investigationId },
+      }),
+    );
+  }
+}
+
+function addInvestigationSegment(
+  segments: Segment[],
+  toolName: string,
+  result: unknown,
+  autoOpen: boolean,
+): void {
+  for (const reference of extractInvestigationReferences(toolName, result)) {
+    addInvestigationReference(segments, reference, autoOpen);
+  }
+}
 
 function buildContent(
   segments: Segment[],
@@ -470,6 +533,8 @@ function buildContent(
       // this as a polling ReportCard that swaps to the full artifact
       // once the backend flips the row's status to "complete".
       parts.push({ type: "text", text: `<report-pending ${seg.value}/>` });
+    } else if (seg.kind === "investigation_ref") {
+      parts.push({ type: "text", text: `<investigation-ref>${seg.value}</investigation-ref>` });
     }
   }
 

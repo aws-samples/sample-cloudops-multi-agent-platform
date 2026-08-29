@@ -73,16 +73,26 @@ resource "aws_cloudwatch_log_group" "lambda" {
   tags              = local.common_tags
 }
 
+resource "aws_s3_object" "lambda" {
+  bucket      = var.artifact_bucket
+  key         = "deployment-artifacts/${var.project_tag}/tools/${var.tool_name}/${filesha256(var.lambda_zip_path)}.zip"
+  source      = var.lambda_zip_path
+  source_hash = filebase64sha256(var.lambda_zip_path)
+  tags        = local.common_tags
+}
+
 resource "aws_lambda_function" "this" {
-  function_name    = "${var.project_tag}-${var.tool_name}-tool"
-  role             = aws_iam_role.lambda.arn
-  handler          = var.handler
-  runtime          = var.runtime
-  timeout          = var.timeout
-  memory_size      = var.memory_size
-  filename         = var.lambda_zip_path
-  source_code_hash = filebase64sha256(var.lambda_zip_path)
-  tags             = local.common_tags
+  function_name     = "${var.project_tag}-${var.tool_name}-tool"
+  role              = aws_iam_role.lambda.arn
+  handler           = var.handler
+  runtime           = var.runtime
+  timeout           = var.timeout
+  memory_size       = var.memory_size
+  s3_bucket         = aws_s3_object.lambda.bucket
+  s3_key            = aws_s3_object.lambda.key
+  s3_object_version = aws_s3_object.lambda.version_id
+  source_code_hash  = filebase64sha256(var.lambda_zip_path)
+  tags              = local.common_tags
 
   depends_on = [aws_cloudwatch_log_group.lambda]
 

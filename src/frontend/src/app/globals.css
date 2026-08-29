@@ -641,3 +641,17 @@ button.artifact-card:hover {
   background: rgba(124, 58, 237, 0.22);
   color: inherit;
 }
+/* Investigation activity is a split panel on desktop and a full-screen overlay on mobile. */
+.investigation-panel {
+  width: min(440px, 46vw);
+}
+
+@media (max-width: 767px) {
+  .investigation-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    width: 100%;
+    border-left: 0 !important;
+  }
+}

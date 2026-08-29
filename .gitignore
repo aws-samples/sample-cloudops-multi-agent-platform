@@ -53,6 +53,7 @@ src/lambda/mcp/*.zip
 src/lambda/frontend/*.zip
 src/lambda/frontend/*/package/
 src/lambda/collectors/**/*.zip
+src/lambda/workflows/**/*.zip
 .lambda-hashes/
 
 # Per-agent hierarchy.json slices, written by scripts/lib/build.sh before
@@ -100,4 +101,3 @@ Makefile.local
 
 # Playwright MCP runtime artifacts (snapshot yaml, console logs per test run)
 .playwright-mcp/
-

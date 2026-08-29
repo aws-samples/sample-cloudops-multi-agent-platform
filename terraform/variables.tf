@@ -286,6 +286,90 @@ variable "health_enrichment_model_id" {
   default     = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
 }
 
+variable "devops_agent_space_id" {
+  description = "AWS DevOps Agent Space ID. Required when the integration is enabled."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = !var.devops_agent_integration_enabled || var.devops_agent_space_id != ""
+    error_message = "devops_agent_space_id is required when devops_agent_integration_enabled is true."
+  }
+}
+
+variable "devops_agent_space_region" {
+  description = "Region containing the DevOps Agent Space. Empty uses aws_region."
+  type        = string
+  default     = ""
+}
+
+variable "devops_agent_integration_enabled" {
+  description = "Deploy and enable the native AWS DevOps Agent integration."
+  type        = bool
+  default     = false
+}
+
+variable "devops_agent_health_automatic_enabled" {
+  description = "Automatically investigate eligible ACTION_REQUIRED or open issue Health rows."
+  type        = bool
+  default     = false
+}
+
+variable "devops_agent_max_concurrency" {
+  description = "Maximum active provider tasks per Agent Space."
+  type        = number
+  default     = 2
+
+  validation {
+    condition     = var.devops_agent_max_concurrency >= 1
+    error_message = "devops_agent_max_concurrency must be at least 1."
+  }
+}
+
+variable "devops_agent_automatic_daily_budget" {
+  description = "Maximum automatic investigations started per UTC day."
+  type        = number
+  default     = 10
+
+  validation {
+    condition     = var.devops_agent_automatic_daily_budget >= 1
+    error_message = "devops_agent_automatic_daily_budget must be at least 1."
+  }
+}
+
+variable "devops_agent_max_age_minutes" {
+  description = "Age after which cancellation is requested for a nonterminal task."
+  type        = number
+  default     = 120
+
+  validation {
+    condition     = var.devops_agent_max_age_minutes >= 1
+    error_message = "devops_agent_max_age_minutes must be at least 1."
+  }
+}
+
+variable "devops_agent_sweep_interval_minutes" {
+  description = "Scheduled reconciliation interval in minutes."
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.devops_agent_sweep_interval_minutes >= 1
+    error_message = "devops_agent_sweep_interval_minutes must be at least 1."
+  }
+}
+
+variable "devops_agent_coverage_cache_ttl_seconds" {
+  description = "In-memory Agent Space association cache TTL."
+  type        = number
+  default     = 300
+
+  validation {
+    condition     = var.devops_agent_coverage_cache_ttl_seconds >= 0
+    error_message = "devops_agent_coverage_cache_ttl_seconds cannot be negative."
+  }
+}
+
 variable "memory_id" {
   description = <<-EOT
     AgentCore memory ID. Auto-populated by `scripts/deploy.sh` post-memory

@@ -93,6 +93,15 @@ module "shared_config" {
   health_events_cross_account_role_arn       = var.health_events_cross_account_role_arn
   network_resilience_cross_account_role_arns = join(",", var.network_resilience_cross_account_role_arns)
   memory_id                                  = var.memory_id
+  devops_agent_space_id                      = var.devops_agent_space_id
+  devops_agent_space_region                  = var.devops_agent_space_region
+  devops_agent_integration_enabled           = var.devops_agent_integration_enabled
+  devops_agent_health_automatic_enabled      = var.devops_agent_health_automatic_enabled
+  devops_agent_max_concurrency               = var.devops_agent_max_concurrency
+  devops_agent_automatic_daily_budget        = var.devops_agent_automatic_daily_budget
+  devops_agent_max_age_minutes               = var.devops_agent_max_age_minutes
+  devops_agent_sweep_interval_minutes        = var.devops_agent_sweep_interval_minutes
+  devops_agent_coverage_cache_ttl_seconds    = var.devops_agent_coverage_cache_ttl_seconds
 }
 
 # -----------------------------------------------------------------------------
@@ -184,6 +193,36 @@ module "health_events_collection" {
 }
 
 # -----------------------------------------------------------------------------
+# Native AWS DevOps Agent investigation workflow. Disabled by default. Health
+# stream ingestion is added only when Health is deployed and automation is on.
+# -----------------------------------------------------------------------------
+module "devops_agent_integration" {
+  source = "./modules/custom/devops-agent-integration"
+  count = (
+    var.devops_agent_integration_enabled
+    && var.deploy_tools
+    && (length(var.selected_tools) == 0 || contains(var.selected_tools, "devops-agent"))
+  ) ? 1 : 0
+
+  project_tag                = var.project_tag
+  environment_tag            = var.environment_tag
+  workflow_zip_path          = "${path.module}/../src/lambda/workflows/devops-agent/devops-agent-workflow.zip"
+  artifact_bucket            = var.s3_bucket
+  health_table_stream_arn    = try(module.health_events_collection[0].stream_arn, "")
+  agent_space_id             = var.devops_agent_space_id
+  agent_space_region         = var.devops_agent_space_region != "" ? var.devops_agent_space_region : var.aws_region
+  integration_enabled        = var.devops_agent_integration_enabled
+  automatic_health_enabled   = var.devops_agent_health_automatic_enabled && length(module.health_events_collection) > 0
+  max_concurrency            = var.devops_agent_max_concurrency
+  automatic_daily_budget     = var.devops_agent_automatic_daily_budget
+  max_age_minutes            = var.devops_agent_max_age_minutes
+  sweep_interval_minutes     = var.devops_agent_sweep_interval_minutes
+  coverage_cache_ttl_seconds = var.devops_agent_coverage_cache_ttl_seconds
+  log_retention_days         = var.log_retention_days
+  kms_key_arn                = module.kms.key_arn
+}
+
+# -----------------------------------------------------------------------------
 # Tag Governance Collection (scheduled compliance snapshots; opt-out via
 # enable_tag_snapshots=false). Deployed only when the tag-governance tool is.
 # -----------------------------------------------------------------------------
@@ -241,6 +280,33 @@ module "frontend_api" {
 }
 
 # -----------------------------------------------------------------------------
+# Cognito-protected, read-only investigation activity API.
+# -----------------------------------------------------------------------------
+module "devops_agent_read_api" {
+  source = "./modules/custom/devops-agent-read-api"
+  count = (
+    var.deploy_agents
+    && var.deploy_frontend
+    && length(module.devops_agent_integration) > 0
+  ) ? 1 : 0
+
+  project_tag     = var.project_tag
+  environment_tag = var.environment_tag
+  lambda_zip_path = "${path.module}/../src/lambda/frontend/investigation-read.zip"
+
+  api_gateway_id            = module.frontend_api[0].api_id
+  api_gateway_execution_arn = module.frontend_api[0].api_execution_arn
+  cognito_authorizer_id     = module.frontend_api[0].cognito_authorizer_id
+
+  investigations_table_name = module.devops_agent_integration[0].table_name
+  investigations_table_arn  = module.devops_agent_integration[0].table_arn
+  agent_space_id            = var.devops_agent_space_id
+  reconcile_function_arn    = module.devops_agent_integration[0].reconcile_function_arn
+  kms_key_arn               = module.kms.key_arn
+  log_retention_days        = var.log_retention_days
+}
+
+# -----------------------------------------------------------------------------
 # network-resilience-api — browser-facing REST Lambda, attaches routes to the
 # same API Gateway as frontend-api. Gated on network-resiliency-agent being in
 # the selected-agents list AND the frontend-api module being up (that's what
@@ -285,6 +351,8 @@ module "agentcore_runtime" {
   agent_registry_table_arn   = local.agent_registry_table_arn
   report_table_name          = local.report_table_name
   report_table_arn           = local.report_table_arn
+  investigations_table_name  = length(module.devops_agent_integration) > 0 ? module.devops_agent_integration[0].table_name : ""
+  investigations_table_arn   = length(module.devops_agent_integration) > 0 ? module.devops_agent_integration[0].table_arn : ""
   agentcore_memory_id        = local.memory_id
   agentcore_gateway_endpoint = local.gateway_endpoint
   agentcore_gateway_arn      = local.gateway_arn
@@ -321,6 +389,7 @@ module "lambda_tools" {
   project_tag     = var.project_tag
   environment_tag = var.environment_tag
   lambda_zip_path = "${path.module}/../src/lambda/mcp/${each.key}.zip"
+  artifact_bucket = var.s3_bucket
   handler         = each.value.handler
   runtime         = each.value.runtime
   timeout         = each.value.timeout
@@ -342,6 +411,21 @@ module "lambda_tools" {
     lookup(each.value, "needs_health_events", false) && length(module.health_events_collection) > 0 ? {
       HEALTH_EVENTS_TABLE_NAME = module.health_events_collection[0].table_name
     } : {},
+    lookup(each.value, "needs_devops_agent", false) && length(module.devops_agent_integration) > 0 ? {
+      INVESTIGATIONS_TABLE_NAME               = module.devops_agent_integration[0].table_name
+      DEVOPS_AGENT_SPACE_ID                   = var.devops_agent_space_id
+      DEVOPS_AGENT_SPACE_REGION               = var.devops_agent_space_region != "" ? var.devops_agent_space_region : var.aws_region
+      DEVOPS_AGENT_INTEGRATION_ENABLED        = tostring(var.devops_agent_integration_enabled)
+      DEVOPS_AGENT_HEALTH_AUTOMATIC_ENABLED   = tostring(var.devops_agent_health_automatic_enabled)
+      DEVOPS_AGENT_MAX_CONCURRENCY            = tostring(var.devops_agent_max_concurrency)
+      DEVOPS_AGENT_AUTOMATIC_DAILY_BUDGET     = tostring(var.devops_agent_automatic_daily_budget)
+      DEVOPS_AGENT_MAX_AGE_MINUTES            = tostring(var.devops_agent_max_age_minutes)
+      DEVOPS_AGENT_RECONCILIATION_SECONDS     = tostring(var.devops_agent_sweep_interval_minutes * 60)
+      DEVOPS_AGENT_COVERAGE_CACHE_TTL_SECONDS = tostring(var.devops_agent_coverage_cache_ttl_seconds)
+    } : {},
+    each.key == "health-events" && length(module.devops_agent_integration) > 0 ? {
+      INVESTIGATIONS_TABLE_NAME = module.devops_agent_integration[0].table_name
+    } : {},
     # Snapshot cache for tag-governance: when the collection module is
     # deployed, the tool serves canonical (unfiltered) queries from the
     # snapshot table and falls back to live scans otherwise. The read IAM
@@ -360,6 +444,91 @@ module "lambda_tools" {
 
   kms_key_arn        = module.kms.key_arn
   log_retention_days = var.log_retention_days
+}
+
+# The DevOps Agent Gateway target uses the same coordinator as the stream
+# workflow. Keep provider and table permissions in separate, exact statements
+# rather than widening lambda-tool-base's generic action/resource pair.
+resource "aws_iam_role_policy" "devops_agent_gateway" {
+  for_each = length(module.devops_agent_integration) > 0 && contains(keys(module.lambda_tools), "devops-agent") ? {
+    gateway = module.lambda_tools["devops-agent"].lambda_role_name
+  } : {}
+
+  name = "${var.project_tag}-devops-agent-gateway"
+  role = each.value
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = concat(
+      length(module.health_events_collection) > 0 ? [
+        {
+          Sid      = "HealthEventRead"
+          Effect   = "Allow"
+          Action   = ["dynamodb:GetItem"]
+          Resource = module.health_events_collection[0].table_arn
+        },
+      ] : [],
+      [
+        {
+          Sid    = "InvestigationPersistence"
+          Effect = "Allow"
+          Action = [
+            "dynamodb:GetItem",
+            "dynamodb:PutItem",
+            "dynamodb:TransactWriteItems",
+            "dynamodb:UpdateItem",
+          ]
+          Resource = module.devops_agent_integration[0].table_arn
+        },
+        {
+          Sid    = "ExactAgentSpace"
+          Effect = "Allow"
+          Action = [
+            "aidevops:CreateBacklogTask",
+            "aidevops:ListJournalRecords",
+            "aidevops:ListAssociations",
+          ]
+          Resource = module.devops_agent_integration[0].agent_space_arn
+        },
+        {
+          Sid    = "InvestigationTableKey"
+          Effect = "Allow"
+          Action = [
+            "kms:Decrypt",
+            "kms:GenerateDataKey",
+            "kms:DescribeKey",
+          ]
+          Resource = module.kms.key_arn
+        },
+      ],
+    )
+  })
+}
+
+resource "aws_iam_role_policy" "health_investigation_read" {
+  for_each = length(module.devops_agent_integration) > 0 && contains(keys(module.lambda_tools), "health-events") ? {
+    health = module.lambda_tools["health-events"].lambda_role_name
+  } : {}
+
+  name = "${var.project_tag}-health-investigation-read"
+  role = each.value
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:BatchGetItem",
+          "dynamodb:GetItem",
+        ]
+        Resource = module.devops_agent_integration[0].table_arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt"]
+        Resource = module.kms.key_arn
+      },
+    ]
+  })
 }
 
 # Keep the generic tool role policy limited to CloudWatch API reads. Snapshot

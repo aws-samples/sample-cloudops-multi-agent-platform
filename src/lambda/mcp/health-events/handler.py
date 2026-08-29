@@ -9,11 +9,13 @@ Access patterns and index strategy:
     Table PK/SK:        (eventArn, accountId)     — point lookup by ARN
     GSI CategoryTimeIndex: (eventTypeCategory, lastUpdateTime)
     GSI AccountTimeIndex:  (accountId, lastUpdateTime)
+    GSI StatusTimeIndex:   (statusCode, lastUpdateTime)
 
 Query routing:
     by ARN                  -> GetItem on base table
     by account + time       -> Query AccountTimeIndex
-    by category + time      -> Query CategoryTimeIndex (used for critical/recent)
+    by category + time      -> Query CategoryTimeIndex (used for critical)
+    by status + optional time -> Query StatusTimeIndex (used for current inventory)
     by service-only         -> Scan (no suitable index; service cardinality is low)
     arbitrary multi-filter  -> best-fit index then FilterExpression for the rest
 
@@ -31,6 +33,7 @@ Required IAM Permissions:
 """
 
 import decimal
+import hashlib
 import json
 import os
 from datetime import datetime, timedelta, timezone
@@ -40,10 +43,13 @@ from boto3.dynamodb.conditions import Attr, Key
 
 DYNAMODB_TABLE_NAME = os.environ.get("HEALTH_EVENTS_TABLE_NAME", "")
 DYNAMODB_REGION = os.environ.get("AWS_REGION", "us-east-1")
+INVESTIGATIONS_TABLE_NAME = os.environ.get("INVESTIGATIONS_TABLE_NAME", "")
 
 _ACCOUNT_INDEX = "AccountTimeIndex"
 _CATEGORY_INDEX = "CategoryTimeIndex"
+_STATUS_INDEX = "StatusTimeIndex"
 _EVENT_CATEGORIES = ("issue", "scheduledChange", "accountNotification", "investigation")
+_ACTIVE_STATUSES = ("open", "upcoming")
 
 
 def _get_table():
@@ -73,6 +79,7 @@ def handler(event, context):
     fn = handlers.get(tool_name)
     if fn:
         resp = fn(event)
+        resp = _enrich_investigation_status(resp)
         print(
             f"Response keys: {list(resp.keys()) if isinstance(resp, dict) else 'n/a'}"
         )
@@ -99,6 +106,86 @@ def _serialize(items):
             default=lambda o: float(o) if isinstance(o, decimal.Decimal) else str(o),
         )
     )
+
+
+def _source_key(event_arn, account_id):
+    raw = f"HEALTH#{event_arn}#{account_id}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _batch_get_investigations(keys):
+    """Batch-read pointers or metadata while retrying unprocessed keys."""
+    if not INVESTIGATIONS_TABLE_NAME or not keys:
+        return []
+    client = boto3.resource(
+        "dynamodb", region_name=DYNAMODB_REGION
+    ).meta.client
+    items = []
+    pending = {
+        INVESTIGATIONS_TABLE_NAME: {
+            "Keys": keys,
+        }
+    }
+    while pending:
+        response = client.batch_get_item(RequestItems=pending)
+        items.extend(
+            response.get("Responses", {}).get(
+                INVESTIGATIONS_TABLE_NAME, []
+            )
+        )
+        pending = response.get("UnprocessedKeys", {})
+    return items
+
+
+def _compact_summary(value):
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value[:1000]
+    return json.dumps(_serialize(value), default=str)[:1000]
+
+
+def _enrich_investigation_status(response):
+    """Attach compact investigation state to normal Health query results."""
+    if not INVESTIGATIONS_TABLE_NAME or not isinstance(response, dict):
+        return response
+    events = response.get("events")
+    if events is None and isinstance(response.get("event"), dict):
+        events = [response["event"]]
+    if not events:
+        return response
+
+    event_by_pointer = {}
+    pointer_keys = []
+    for health_event in events:
+        event_arn = health_event.get("eventArn")
+        account_id = health_event.get("accountId")
+        if not event_arn or not account_id:
+            continue
+        pointer_pk = f"SOURCE#{_source_key(event_arn, account_id)}"
+        event_by_pointer[pointer_pk] = health_event
+        pointer_keys.append({"PK": pointer_pk, "SK": "POINTER"})
+
+    pointers = _batch_get_investigations(pointer_keys)
+    meta_keys = [
+        {"PK": f"INV#{pointer['investigationId']}", "SK": "META"}
+        for pointer in pointers
+    ]
+    metas = _batch_get_investigations(meta_keys)
+    meta_by_id = {meta["investigationId"]: meta for meta in metas}
+    for pointer in pointers:
+        health_event = event_by_pointer.get(pointer["PK"])
+        meta = meta_by_id.get(pointer.get("investigationId"))
+        if not health_event or not meta:
+            continue
+        health_event["investigation"] = {
+            "investigationId": meta["investigationId"],
+            "workflowState": meta.get("workflowState"),
+            "providerStatus": meta.get("providerStatus"),
+            "reason": meta.get("reason"),
+            "summary": _compact_summary(meta.get("summary")),
+        }
+    return response
 
 
 # ---------------------------------------------------------------------------
@@ -337,22 +424,51 @@ def handle_get_critical_events(event):
 
 
 def handle_get_recent_events(event):
-    """All events in a time window, merged across categories."""
+    """All unresolved events plus recently closed events."""
     try:
         days_back = int(event.get("days_back", 7))
         start = _date_n_days_ago(days_back)
         limit = int(event.get("limit", 100))
+        requested_status = (
+            str(event["status"]).lower() if event.get("status") else None
+        )
 
-        filt = Attr("statusCode").eq(event["status"]) if event.get("status") else None
-
+        statuses = (
+            [requested_status]
+            if requested_status
+            else [*_ACTIVE_STATUSES, "closed"]
+        )
         all_items = []
-        for cat in _EVENT_CATEGORIES:
-            key_cond = Key("eventTypeCategory").eq(cat) & Key("lastUpdateTime").gte(start)
-            all_items.extend(_query(_CATEGORY_INDEX, key_cond, filt, limit))
-            if len(all_items) >= limit:
-                break
+        for status in statuses:
+            key_cond = Key("statusCode").eq(status)
+            if status not in _ACTIVE_STATUSES:
+                key_cond &= Key("lastUpdateTime").gte(start)
+            all_items.extend(_query(_STATUS_INDEX, key_cond, limit=limit))
+
         all_items.sort(key=lambda x: x.get("lastUpdateTime", ""), reverse=True)
-        return {"days_back": days_back, "count": len(all_items[:limit]), "events": all_items[:limit]}
+        all_items.sort(
+            key=lambda x: x.get("statusCode") not in _ACTIVE_STATUSES
+        )
+
+        seen = set()
+        events = []
+        for item in all_items:
+            identity = (item.get("eventArn"), item.get("accountId"))
+            if all(identity) and identity in seen:
+                continue
+            if all(identity):
+                seen.add(identity)
+            events.append(item)
+            if len(events) >= limit:
+                break
+
+        return {
+            "days_back": days_back,
+            "includes_all_active": requested_status is None
+            or requested_status in _ACTIVE_STATUSES,
+            "count": len(events),
+            "events": events,
+        }
     except Exception as e:
         return {"error": str(e)}
 

@@ -7,11 +7,12 @@ import type { ThreadMessageLike } from "@assistant-ui/react";
 import { PanelLeftClose, PanelLeftOpen, Sun, Moon, NotebookText, LogOut, User } from "lucide-react";
 import { getToken, getActorId, getUserEmail, signOut, isDevBypass } from "@/lib/auth";
 import { listTemplates, createTemplate, updateTemplate, deleteTemplate } from "@/lib/runtime-client";
-import type { Template } from "@/lib/runtime-client";
+import type { Message, Template } from "@/lib/runtime-client";
 import { Thread } from "@/components/Thread";
 import { ThreadSidebar } from "@/components/ThreadSidebar";
 import { ReportPanel } from "@/components/ReportPanel";
 import { TracePanel } from "@/components/TracePanel";
+import { InvestigationPanel } from "@/components/InvestigationPanel";
 import { VisualizerPanel } from "@/components/visualizer/VisualizerPanel";
 import { ReportTemplateEditor } from "@/components/ReportTemplateEditor";
 import { ReportTemplateList } from "@/components/ReportTemplateList";
@@ -19,6 +20,12 @@ import { ThreadBusyCard } from "@/components/ThreadBusyCard";
 import { useTheme } from "@/lib/theme";
 import type { TopologyData, CombinedAssessment } from "@/lib/topology";
 import { extractVisualizerStateFromMemory } from "@/lib/visualizer-state";
+import {
+  extractInvestigationReference,
+  extractInvestigationReferencesFromMemory,
+  investigationMarker,
+  parseInvestigationMarker,
+} from "@/lib/investigation-result";
 import { useThreadActivity } from "@/lib/thread-activity";
 import { ThreadBusyProvider } from "@/lib/thread-busy-context";
 
@@ -55,6 +62,30 @@ function splitReportPendingParts(
   return parts;
 }
 
+function investigationPartsFromHistory(message: Message): { type: "text"; text: string }[] {
+  const references = new Map<string, ReturnType<typeof parseInvestigationMarker>>();
+  for (const match of message.content.matchAll(/<investigation-ref>[\s\S]*?<\/investigation-ref>/g)) {
+    const reference = parseInvestigationMarker(match[0]);
+    if (reference) references.set(reference.investigationId, reference);
+  }
+  for (const reference of extractInvestigationReferencesFromMemory(message.content)) {
+    references.set(reference.investigationId, reference);
+  }
+  for (const invocation of message.tool_invocations || []) {
+    const reference = extractInvestigationReference(
+      invocation.tool_name,
+      invocation.result || "",
+    );
+    if (reference) references.set(reference.investigationId, reference);
+  }
+  return [...references.values()]
+    .filter((reference): reference is NonNullable<typeof reference> => Boolean(reference))
+    .map((reference) => ({
+      type: "text" as const,
+      text: investigationMarker(reference),
+    }));
+}
+
 function ChatSkeleton() {
   return (
     <div className="flex-1 flex flex-col px-4 pt-8 pb-4 max-w-2xl mx-auto w-full">
@@ -87,6 +118,7 @@ export default function Home() {
   const [activeArtifactReportId, setActiveArtifactReportId] = useState<string | null>(null);
   const [activeTraceMessageId, setActiveTraceMessageId] = useState<string | null>(null);
   const [activeVisualizerMessageId, setActiveVisualizerMessageId] = useState<string | null>(null);
+  const [activeInvestigationId, setActiveInvestigationId] = useState<string | null>(null);
   const [messagesLoading, setMessagesLoading] = useState(false);
   // History-fetch failure state + manual retry trigger. Distinguishes "this
   // conversation is empty" from "loading this conversation failed" — the two
@@ -235,6 +267,7 @@ export default function Home() {
         // Three-way mutual exclusion — only one right-panel mode at a time.
         setActiveTraceMessageId(null);
         setActiveVisualizerMessageId(null);
+        setActiveInvestigationId(null);
         // Open reports in split view by default; the user opts into full-width
         // via the panel's expand toggle. Reset any lingering collapse from a
         // prior full-width report/visualizer session.
@@ -253,6 +286,7 @@ export default function Home() {
         setActiveTraceMessageId(detail.messageId);
         setActiveArtifactMessageId(null);
         setActiveVisualizerMessageId(null);
+        setActiveInvestigationId(null);
         // Trace panel has no full-width mode — make sure a prior report/viz
         // full-width session doesn't leave the chat collapsed behind it.
         setChatCollapsed(false);
@@ -271,11 +305,27 @@ export default function Home() {
         setActiveVisualizerMessageId(detail.messageId);
         setActiveArtifactMessageId(null);
         setActiveTraceMessageId(null);
+        setActiveInvestigationId(null);
         setSidebarOpen(false);
       }
     };
     window.addEventListener("open-visualizer", handler);
     return () => window.removeEventListener("open-visualizer", handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const investigationId = (event as CustomEvent).detail?.investigationId;
+      if (!investigationId) return;
+      setActiveInvestigationId(investigationId);
+      setActiveArtifactMessageId(null);
+      setActiveArtifactReportId(null);
+      setActiveTraceMessageId(null);
+      setActiveVisualizerMessageId(null);
+      setChatCollapsed(false);
+    };
+    window.addEventListener("open-investigation", handler);
+    return () => window.removeEventListener("open-investigation", handler);
   }, []);
 
   // Listen for template generation requests from the Composer template picker.
@@ -303,6 +353,7 @@ export default function Home() {
       setActiveArtifactMessageId(null);
       setActiveTraceMessageId(null);
       setActiveVisualizerMessageId(null);
+      setActiveInvestigationId(null);
       setThreadId(uuidv4());
     };
     window.addEventListener("generate-from-template", handler);
@@ -338,6 +389,7 @@ export default function Home() {
       setActiveArtifactMessageId(null);
       setActiveTraceMessageId(null);
       setActiveVisualizerMessageId(null);
+      setActiveInvestigationId(null);
       // Tiny timeout so Thread's activate-report-mode listener flips its
       // badge before the composer send races ahead.
       setTimeout(() => {
@@ -385,7 +437,9 @@ export default function Home() {
         const token = await getToken();
         const actorId = getActorId();
 
-        const msgs = await getSessionHistory(threadId, actorId, () => Promise.resolve(token));
+        const msgs = isDevBypass()
+          ? []
+          : await getSessionHistory(threadId, actorId, () => Promise.resolve(token));
         if (cancelled) return;
 
         if (msgs.length === 0) {
@@ -414,6 +468,12 @@ export default function Home() {
 
         const initial = msgs.map((m) => {
           let mainContent = m.content;
+          const investigationParts = m.role === "assistant"
+            ? investigationPartsFromHistory(m)
+            : [];
+          if (investigationParts.length) {
+            mainContent = mainContent.replace(/<investigation-ref>[\s\S]*?<\/investigation-ref>/g, "").trim();
+          }
           let suggestionsPart: { type: "text"; text: string } | null = null;
           let artifactPart: { type: "text"; text: string } | null = null;
           // Rehydrate the VisualizerCard. Two save formats are supported:
@@ -499,6 +559,7 @@ export default function Home() {
 
               if (parts.length > 0) {
                 if (vizStatePart) parts.push(vizStatePart);
+                parts.push(...investigationParts);
                 return { role: m.role as "user" | "assistant", content: parts };
               }
             }
@@ -535,6 +596,7 @@ export default function Home() {
               reportParts.push(...(artifactPart ? [artifactPart] : []));
               reportParts.push(...(suggestionsPart ? [suggestionsPart] : []));
               if (vizStatePart) reportParts.push(vizStatePart);
+              reportParts.push(...investigationParts);
               return { role: m.role as "user" | "assistant", content: reportParts };
             }
             // Extract <suggestions> for non-report messages
@@ -582,6 +644,7 @@ export default function Home() {
                 ...(artifactPart ? [artifactPart] : []),
                 ...(suggestionsPart ? [suggestionsPart] : []),
                 ...(vizStatePart ? [vizStatePart] : []),
+                ...investigationParts,
               ];
               const contentParts = [...segments, ...extraParts];
               return { role: m.role as "user" | "assistant", content: contentParts };
@@ -605,6 +668,7 @@ export default function Home() {
             ...(artifactPart ? [artifactPart] : []),
             ...(suggestionsPart ? [suggestionsPart] : []),
             ...(vizStatePart ? [vizStatePart] : []),
+            ...investigationParts,
           ];
 
           // Peel any report-pending markers out of the residual mainContent
@@ -664,6 +728,7 @@ export default function Home() {
     setActiveArtifactMessageId(null);
     setActiveTraceMessageId(null);
     setActiveVisualizerMessageId(null);
+    setActiveInvestigationId(null);
   }, []);
 
   const handleNewThread = useCallback(() => {
@@ -889,6 +954,13 @@ export default function Home() {
             // the user last left it (normal toggle still works here).
             setChatCollapsed(false);
           }}
+        />
+      )}
+
+      {activeInvestigationId && (
+        <InvestigationPanel
+          investigationId={activeInvestigationId}
+          onClose={() => setActiveInvestigationId(null)}
         />
       )}
 
