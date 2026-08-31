@@ -351,7 +351,7 @@ variable "devops_agent_max_age_minutes" {
 variable "devops_agent_sweep_interval_minutes" {
   description = "Scheduled reconciliation interval in minutes."
   type        = number
-  default     = 1
+  default     = 5
 
   validation {
     condition     = var.devops_agent_sweep_interval_minutes >= 1

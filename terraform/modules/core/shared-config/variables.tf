@@ -204,7 +204,7 @@ variable "devops_agent_max_age_minutes" {
 
 variable "devops_agent_sweep_interval_minutes" {
   type    = number
-  default = 1
+  default = 5
 }
 
 variable "devops_agent_coverage_cache_ttl_seconds" {

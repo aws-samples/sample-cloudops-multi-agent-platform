@@ -734,7 +734,7 @@ _configure_prompts() {
       shared_config_prompt devops_max_age "  Maximum investigation age in minutes" \
         "$(shared_config_get DEVOPS_AGENT_MAX_AGE_MINUTES 120)"
       shared_config_prompt devops_sweep "  Reconciliation interval in minutes" \
-        "$(shared_config_get DEVOPS_AGENT_SWEEP_INTERVAL_MINUTES 1)"
+        "$(shared_config_get DEVOPS_AGENT_SWEEP_INTERVAL_MINUTES 5)"
       shared_config_prompt devops_coverage_ttl "  Coverage cache TTL in seconds" \
         "$(shared_config_get DEVOPS_AGENT_COVERAGE_CACHE_TTL_SECONDS 300)"
       _answers_set DEVOPS_AGENT_SPACE_ID "$devops_space_id"
