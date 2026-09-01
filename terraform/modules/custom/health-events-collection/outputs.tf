@@ -13,3 +13,7 @@ output "queue_arn" {
 output "collector_function_name" {
   value = aws_lambda_function.collector.function_name
 }
+
+output "stream_arn" {
+  value = aws_dynamodb_table.health_events.stream_arn
+}

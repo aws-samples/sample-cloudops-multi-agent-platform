@@ -198,6 +198,10 @@ package: $(HASH_DIR) ## Package Lambda tools (only changed ones, parallel)
 			extra_hash=$$(find src/lambda/mcp/network-resilience/network_resilience -type f \( -name '*.py' -o -name '*.json' \) -exec shasum {} + 2>/dev/null | sort | shasum | cut -d' ' -f1); \
 			current_hash=$$(printf '%s%s' "$$current_hash" "$$extra_hash" | shasum | cut -d' ' -f1); \
 		fi; \
+		if [ "$$name" = "investigation-read" ]; then \
+			extra_hash=$$(shasum src/lambda/mcp/shared/devops_agent_redaction.py | cut -d' ' -f1); \
+			current_hash=$$(printf '%s%s' "$$current_hash" "$$extra_hash" | shasum | cut -d' ' -f1); \
+		fi; \
 		stored_hash=$$(cat $(HASH_DIR)/$$hash_key.sha 2>/dev/null || echo ""); \
 		if [ "$$current_hash" = "$$stored_hash" ] && [ -f "$$zip_path" ]; then \
 			echo "  frontend/$$name: unchanged, skipping"; \
@@ -215,6 +219,11 @@ package: $(HASH_DIR) ## Package Lambda tools (only changed ones, parallel)
 			done; \
 			if [ "$$name" = "network-resilience" ]; then \
 				cp -R src/lambda/mcp/network-resilience/network_resilience "$$dir/package/"; \
+			fi; \
+			if [ "$$name" = "investigation-read" ]; then \
+				mkdir -p "$$dir/package/shared"; \
+				cp src/lambda/mcp/shared/__init__.py "$$dir/package/shared/"; \
+				cp src/lambda/mcp/shared/devops_agent_redaction.py "$$dir/package/shared/"; \
 			fi; \
 			(cd "$$dir/package" && zip -r "../../../../../$$zip_path" . -x '*.pyc' '*/__pycache__/*' --quiet 2>/dev/null); \
 			rm -rf "$$dir/package"; \
@@ -256,6 +265,30 @@ package: $(HASH_DIR) ## Package Lambda tools (only changed ones, parallel)
 			echo "  collector/$$name: done"; \
 		fi; \
 	done
+	@# Package the three DevOps Agent workflow handlers from one artifact.
+	@dir="src/lambda/workflows/devops-agent"; \
+	zip_path="$$dir/devops-agent-workflow.zip"; \
+	shared_hash=$$(find src/lambda/mcp/shared -type f -name '*.py' -exec shasum {} + 2>/dev/null | sort | shasum | cut -d' ' -f1); \
+	src_hash=$$(find "$$dir" -type f \( -name '*.py' -o -name '*.txt' \) ! -name 'devops-agent-workflow.zip' -exec shasum {} + 2>/dev/null | sort | shasum | cut -d' ' -f1); \
+	current_hash=$$(printf '%s%s' "$$src_hash" "$$shared_hash" | shasum | cut -d' ' -f1); \
+	stored_hash=$$(cat $(HASH_DIR)/devops-agent-workflow.sha 2>/dev/null || echo ""); \
+	if [ "$$current_hash" = "$$stored_hash" ] && [ -f "$$zip_path" ]; then \
+		echo "  workflow/devops-agent: unchanged, skipping"; \
+	else \
+		echo "  Packaging workflow/devops-agent..."; \
+		rm -rf "$$dir/package" "$$zip_path"; \
+		mkdir -p "$$dir/package"; \
+		pip install -r "$$dir/requirements.txt" -t "$$dir/package/" \
+			--platform manylinux_2_28_x86_64 --platform manylinux2014_x86_64 \
+			--python-version 3.12 --implementation cp \
+			--only-binary=:all: --upgrade --quiet || exit 1; \
+		cp "$$dir/handler.py" "$$dir/package/"; \
+		cp -R src/lambda/mcp/shared "$$dir/package/"; \
+		(cd "$$dir/package" && zip -r "../devops-agent-workflow.zip" . -x '*.pyc' '*/__pycache__/*' --quiet); \
+		rm -rf "$$dir/package"; \
+		echo "$$current_hash" > $(HASH_DIR)/devops-agent-workflow.sha; \
+		echo "  workflow/devops-agent: done"; \
+	fi
 
 # ---------------------------------------------------------------------------
 # Cleanup
@@ -268,9 +301,11 @@ clean: ## Remove build artifacts, caches, and Lambda packages
 	rm -f src/lambda/mcp/*.zip
 	rm -f src/lambda/frontend/*.zip
 	rm -f src/lambda/collectors/*/*-collector.zip
+	rm -f src/lambda/workflows/*/*-workflow.zip
 	rm -rf src/lambda/mcp/*/package
 	rm -rf src/lambda/collectors/*/package
 	rm -rf src/lambda/frontend/*/package
+	rm -rf src/lambda/workflows/*/package
 	rm -rf $(HASH_DIR)
 	rm -f src/agents/.hierarchy-*.json
 	rm -rf src/frontend/out src/frontend/.next src/frontend/node_modules

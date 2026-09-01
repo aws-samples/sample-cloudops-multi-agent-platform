@@ -33,6 +33,7 @@ import { LoaderPinwheelIcon, type LoaderPinwheelIconHandle } from "@/components/
 import { CircleCheckIcon, type CircleCheckIconHandle } from "@/components/ui/circle-check";
 import { VisualizerCard } from "@/components/visualizer/VisualizerCard";
 import { ReportCard } from "@/components/ReportCard";
+import { InvestigationCard } from "@/components/InvestigationCard";
 import { useThreadBusyRemote } from "@/lib/thread-busy-context";
 import { useEditingReport } from "@/lib/editing-report-context";
 import { isReportModeMessage, subscribeReportModeMessages } from "@/lib/report-mode-messages";
@@ -552,7 +553,7 @@ function ActionBar() {
   const message = useMessage();
 
   const handleCopy = useCallback(() => {
-    const INTERNAL_TAG_RE = /^<(think|tool|report-tool|report-body|suggestions|artifact|status|visualizer-state|report-pending)[\s>/]/;
+    const INTERNAL_TAG_RE = /^<(think|tool|report-tool|report-body|suggestions|artifact|status|visualizer-state|report-pending|investigation-ref)[\s>/]/;
     const textParts = message.content
       .filter((c): c is { type: "text"; text: string } => c.type === "text")
       .map((c) => c.text)
@@ -989,6 +990,10 @@ function AssistantTextContent({ text }: { text: string }) {
   const pendingMatch = text.match(/^<report-pending\s+([^/>]*)\/>$/);
   if (pendingMatch) {
     return <ReportCard markerText={pendingMatch[1].trim()} />;
+  }
+
+  if (text.match(/^<investigation-ref>[\s\S]*<\/investigation-ref>$/)) {
+    return <InvestigationCard markerText={text} />;
   }
 
   return <MarkdownText text={text} />;

@@ -183,6 +183,11 @@ _NO_FABRICATION_PREAMBLE = """\
    template artifact was generated, summarize the result but never output
    its YAML or a `<cfn-artifact>` block. The platform stores the typed
    artifact separately and injects the matching report marker.
+10. An `<investigation-context>` block is the latest persisted projection
+   of an AWS DevOps Agent investigation referenced in this conversation.
+   Treat it as authoritative for follow-up questions. Do NOT invent or
+   recompute an incident, root cause, mitigation, or status that conflicts
+   with the block. If a field is absent, say it is not yet available.
 
 Breaking any of these rules constitutes a serious operational failure.
 These rules override every other instruction in this prompt.

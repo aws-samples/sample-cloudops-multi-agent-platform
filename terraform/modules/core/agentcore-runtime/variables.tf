@@ -105,6 +105,18 @@ variable "report_table_arn" {
   default     = ""
 }
 
+variable "investigations_table_name" {
+  description = "DevOps Agent investigations table name used to hydrate follow-up chat context"
+  type        = string
+  default     = ""
+}
+
+variable "investigations_table_arn" {
+  description = "DevOps Agent investigations table ARN for read-only context hydration"
+  type        = string
+  default     = ""
+}
+
 variable "bedrock_model_id" {
   description = "Default Bedrock model ID injected as BEDROCK_MODEL_ID env var. Empty string keeps the agent_base.py hardcoded fallback."
   type        = string

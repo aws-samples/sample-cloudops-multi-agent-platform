@@ -173,7 +173,7 @@ from `tools.json`.
 
 ## Frontend architecture
 
-Three data planes:
+Five frontend data paths:
 
 - **Live chat**: Frontend → AgentCore Runtime → AG-UI SSE stream →
   real-time rendering.
@@ -186,10 +186,13 @@ Three data planes:
 - **Visualizer fast-path**: Target-tier flips + live BGP polls go
   Frontend → API Gateway → dedicated network-resilience Lambda
   (<500ms) without triggering a chat turn.
+- **Investigation activity**: Frontend → Cognito-authorized API Gateway →
+  read-only Lambda → investigations DynamoDB. The browser uses ETags and
+  conditional GETs; it never calls AWS DevOps Agent directly.
 
 ### Panel state
 
-The right sidebar has three mutually-exclusive modes:
+The right sidebar has four mutually-exclusive modes:
 
 - **Trace** — thinking/reasoning + tool call hierarchy (from the inline
   trace button on a message).
@@ -200,6 +203,9 @@ The right sidebar has three mutually-exclusive modes:
   recommendations, failure simulation, live-status overlay. Mounts
   when an assistant message contains a `<visualizer-state>` tag.
   Reconstructed on history reload by scanning saved `<tool>` traces.
+- **Investigation** — AWS DevOps Agent status, compact Incident / Root Cause /
+  Mitigation outcome, and selected activity milestones. Conversation cards are
+  reconstructed from persisted `<investigation-ref>` markers.
 
 Session state (tokens + refresh) is persisted to `sessionStorage` so
 page reload doesn't force a Cognito round-trip. Panel state resets on
@@ -253,8 +259,15 @@ NOT `allowed_clients`. Cognito ID tokens carry client ID in `aud`, not
   only, SRP auth flow.
 - **API Gateway HTTP API** — Frontend API with Cognito JWT authoriser.
 - **DynamoDB** — agent registry, report templates, reports,
-  health-events. CMK-encrypted, resource-based policies deny
-  cross-account access.
+  health-events, and compact DevOps Agent investigation projections.
+  CMK-encrypted, resource-based policies deny cross-account access.
+- **AWS DevOps Agent integration** — optional Health-table stream consumer,
+  EventBridge lifecycle listener, and one-minute EventBridge Scheduler
+  reconciler. The deployer supplies the Agent Space ID during configuration.
+  A Lambda target behind AgentCore Gateway exposes explicit investigation
+  tools. Separate workflow Lambdas call AWS DevOps Agent for event-driven and
+  scheduled reconciliation; browser-facing Lambdas only read compact
+  projections from DynamoDB.
 - **KMS** — customer-managed key with annual rotation for DynamoDB
   server-side encryption. Key policy grants DynamoDB + CloudWatch
   Logs service access.

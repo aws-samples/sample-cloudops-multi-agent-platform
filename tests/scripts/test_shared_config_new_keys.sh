@@ -103,10 +103,27 @@ ANS_MODEL_DEFAULT_ID="global.anthropic.claude-opus-4-6-v1"
 ANS_MODEL_HEALTH_ENRICHMENT_ID="global.anthropic.claude-haiku-4-5-20251001-v1:0"
 ANS_CROSS_ACCOUNT_HEALTH_ROLE_ARN="arn:aws:iam::444444444444:role/Health2"
 ANS_CROSS_ACCOUNT_NETWORK_RESILIENCE_ROLE_ARNS="arn:aws:iam::555555555555:role/NRA, arn:aws:iam::666666666666:role/NRB"
+ANS_DEVOPS_AGENT_SPACE_ID="space-123"
+ANS_DEVOPS_AGENT_SPACE_REGION="ap-southeast-1"
+ANS_DEVOPS_AGENT_INTEGRATION_ENABLED="true"
+ANS_DEVOPS_AGENT_HEALTH_AUTOMATIC_ENABLED="true"
+ANS_DEVOPS_AGENT_MAX_CONCURRENCY="2"
+ANS_DEVOPS_AGENT_AUTOMATIC_DAILY_BUDGET="10"
+ANS_DEVOPS_AGENT_MAX_AGE_MINUTES="120"
+ANS_DEVOPS_AGENT_SWEEP_INTERVAL_MINUTES="1"
+ANS_DEVOPS_AGENT_COVERAGE_CACHE_TTL_SECONDS="300"
 
 export ANS_AWS_REGION ANS_IDP_TYPE ANS_MODEL_DEFAULT_ID
 export ANS_MODEL_HEALTH_ENRICHMENT_ID ANS_CROSS_ACCOUNT_HEALTH_ROLE_ARN
 export ANS_CROSS_ACCOUNT_NETWORK_RESILIENCE_ROLE_ARNS
+export ANS_DEVOPS_AGENT_SPACE_ID ANS_DEVOPS_AGENT_SPACE_REGION
+export ANS_DEVOPS_AGENT_INTEGRATION_ENABLED
+export ANS_DEVOPS_AGENT_HEALTH_AUTOMATIC_ENABLED
+export ANS_DEVOPS_AGENT_MAX_CONCURRENCY
+export ANS_DEVOPS_AGENT_AUTOMATIC_DAILY_BUDGET
+export ANS_DEVOPS_AGENT_MAX_AGE_MINUTES
+export ANS_DEVOPS_AGENT_SWEEP_INTERVAL_MINUTES
+export ANS_DEVOPS_AGENT_COVERAGE_CACHE_TTL_SECONDS
 
 shared_config_write_tfvars
 
@@ -119,6 +136,15 @@ print(d.get("health_enrichment_model_id", ""))
 print(d.get("health_events_cross_account_role_arn", ""))
 print(json.dumps(d.get("network_resilience_cross_account_role_arns", []), sort_keys=True))
 print(json.dumps(d.get("tool_env_vars", {}), sort_keys=True))
+print(d.get("devops_agent_space_id", ""))
+print(d.get("devops_agent_space_region", ""))
+print(d.get("devops_agent_integration_enabled"))
+print(d.get("devops_agent_health_automatic_enabled"))
+print(d.get("devops_agent_max_concurrency"))
+print(d.get("devops_agent_automatic_daily_budget"))
+print(d.get("devops_agent_max_age_minutes"))
+print(d.get("devops_agent_sweep_interval_minutes"))
+print(d.get("devops_agent_coverage_cache_ttl_seconds"))
 PY
 )
 assert_eq "$(echo "$RESULT" | sed -n '1p')" "us-west-2" "write_tfvars writes aws_region"
@@ -127,6 +153,15 @@ assert_eq "$(echo "$RESULT" | sed -n '3p')" "global.anthropic.claude-haiku-4-5-2
 assert_eq "$(echo "$RESULT" | sed -n '4p')" "arn:aws:iam::444444444444:role/Health2" "write_tfvars writes health_events_cross_account_role_arn"
 assert_eq "$(echo "$RESULT" | sed -n '5p')" '["arn:aws:iam::555555555555:role/NRA", "arn:aws:iam::666666666666:role/NRB"]' "write_tfvars splits CSV into list"
 assert_eq "$(echo "$RESULT" | sed -n '6p')" '{"cost-explorer": {"CROSS_ACCOUNT_ROLE_ARN": "arn:aws:iam::222222222222:role/CEReader"}}' "write_tfvars preserves tool_env_vars"
+assert_eq "$(echo "$RESULT" | sed -n '7p')" "space-123" "write_tfvars writes Agent Space ID"
+assert_eq "$(echo "$RESULT" | sed -n '8p')" "ap-southeast-1" "write_tfvars writes Agent Space Region"
+assert_eq "$(echo "$RESULT" | sed -n '9p')" "True" "write_tfvars writes integration bool"
+assert_eq "$(echo "$RESULT" | sed -n '10p')" "True" "write_tfvars writes automatic bool"
+assert_eq "$(echo "$RESULT" | sed -n '11p')" "2" "write_tfvars writes concurrency number"
+assert_eq "$(echo "$RESULT" | sed -n '12p')" "10" "write_tfvars writes budget number"
+assert_eq "$(echo "$RESULT" | sed -n '13p')" "120" "write_tfvars writes max age number"
+assert_eq "$(echo "$RESULT" | sed -n '14p')" "1" "write_tfvars writes sweep number"
+assert_eq "$(echo "$RESULT" | sed -n '15p')" "300" "write_tfvars writes coverage TTL number"
 
 # -----------------------------------------------------------------------------
 # Test 3: empty network_resilience answer produces an empty list (not omitted)

@@ -164,3 +164,50 @@ variable "memory_id" {
   type        = string
   default     = ""
 }
+
+variable "devops_agent_space_id" {
+  description = "AWS DevOps Agent Space ID."
+  type        = string
+  default     = ""
+}
+
+variable "devops_agent_space_region" {
+  description = "AWS DevOps Agent Space Region. Empty uses the platform Region."
+  type        = string
+  default     = ""
+}
+
+variable "devops_agent_integration_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "devops_agent_health_automatic_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "devops_agent_max_concurrency" {
+  type    = number
+  default = 2
+}
+
+variable "devops_agent_automatic_daily_budget" {
+  type    = number
+  default = 10
+}
+
+variable "devops_agent_max_age_minutes" {
+  type    = number
+  default = 120
+}
+
+variable "devops_agent_sweep_interval_minutes" {
+  type    = number
+  default = 5
+}
+
+variable "devops_agent_coverage_cache_ttl_seconds" {
+  type    = number
+  default = 300
+}

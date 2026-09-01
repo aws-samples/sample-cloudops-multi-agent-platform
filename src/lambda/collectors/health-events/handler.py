@@ -105,14 +105,16 @@ def _process_health_event(detail: dict, envelope: dict, table) -> None:
     if not event_arn:
         return
 
-    # Extract affected accounts from the event
+    # Organization Health events identify the source account explicitly.
+    # The envelope account is the event-recipient account and is only correct
+    # as a fallback for single-account EventBridge delivery.
     affected = detail.get("affectedEntities", [])
-    account_ids = list(
-        {e.get("awsAccountId", "") for e in affected if e.get("awsAccountId")}
+    affected_account = detail.get("affectedAccount")
+    account_ids = (
+        [str(affected_account)]
+        if affected_account
+        else [str(envelope.get("account", ""))]
     )
-    if not account_ids:
-        # Fall back to the account from the envelope
-        account_ids = [envelope.get("account", "")]
 
     # Extract event fields
     service = detail.get("service", "UNKNOWN")
@@ -121,6 +123,11 @@ def _process_health_event(detail: dict, envelope: dict, table) -> None:
     event_scope_code = detail.get("eventScopeCode", "NONE")
     region = detail.get("eventRegion", envelope.get("region", "global"))
     status_code = detail.get("statusCode", "open")
+    actionability = detail.get("actionability", "")
+    personas = detail.get("personas", [])
+    communication_id = detail.get("communicationId", "")
+    page = detail.get("page")
+    total_pages = detail.get("totalPages")
     start_time = detail.get("startTime", "")
     last_update = detail.get(
         "lastUpdatedTime", start_time or datetime.now(timezone.utc).isoformat()
@@ -201,17 +208,23 @@ def _process_health_event(detail: dict, envelope: dict, table) -> None:
             "eventScopeCode": event_scope_code,
             "region": region,
             "statusCode": status_code,
+            "actionability": actionability,
+            "personas": personas if isinstance(personas, list) else [],
+            "communicationId": communication_id,
+            "page": page,
+            "totalPages": total_pages,
             "startTime": start_time or "N/A",
             "lastUpdateTime": last_update_iso,
             "description": description[:2000] if description else "No description",
             "riskLevel": risk_level,
             "affectedResources": ", ".join(resources[:10]) or "None specified",
-            "ttl": ttl,
             "collectedAt": datetime.now(timezone.utc).isoformat(),
             # Narrative enrichment (may be absent on LLM failure or when
             # ENRICHMENT_MODEL_ID is blank). DDB allows sparse attributes.
             **enrichment,
         }
+        if status_code == "closed":
+            item["ttl"] = ttl
         # Convert for DynamoDB (handle floats → Decimal)
         item = json.loads(json.dumps(item), parse_float=Decimal)
         table.put_item(Item=item)

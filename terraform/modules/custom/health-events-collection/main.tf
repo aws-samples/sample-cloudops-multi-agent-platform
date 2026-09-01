@@ -20,10 +20,12 @@ data "aws_caller_identity" "current" {}
 # DynamoDB Table
 # ---------------------------------------------------------------------------
 resource "aws_dynamodb_table" "health_events" {
-  name         = "${var.project_tag}-health-events"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "eventArn"
-  range_key    = "accountId"
+  name             = "${var.project_tag}-health-events"
+  billing_mode     = "PAY_PER_REQUEST"
+  hash_key         = "eventArn"
+  range_key        = "accountId"
+  stream_enabled   = true
+  stream_view_type = "NEW_AND_OLD_IMAGES"
 
   attribute {
     name = "eventArn"
@@ -45,6 +47,11 @@ resource "aws_dynamodb_table" "health_events" {
     type = "S"
   }
 
+  attribute {
+    name = "statusCode"
+    type = "S"
+  }
+
   global_secondary_index {
     name            = "CategoryTimeIndex"
     hash_key        = "eventTypeCategory"
@@ -61,6 +68,13 @@ resource "aws_dynamodb_table" "health_events" {
   global_secondary_index {
     name            = "AccountTimeIndex"
     hash_key        = "accountId"
+    range_key       = "lastUpdateTime"
+    projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "StatusTimeIndex"
+    hash_key        = "statusCode"
     range_key       = "lastUpdateTime"
     projection_type = "ALL"
   }
@@ -246,7 +260,7 @@ resource "aws_lambda_function" "collector" {
   environment {
     variables = {
       HEALTH_EVENTS_TABLE_NAME = aws_dynamodb_table.health_events.name
-      EVENTS_TTL_DAYS          = "180"
+      EVENTS_TTL_DAYS          = "180" # Closed-event retention; active events do not expire
       LOG_LEVEL                = "INFO"
       # Claude Haiku 4.5 global cross-region inference profile — set to an
       # empty string in the tfvar `health_events_enrichment_model_id` to
@@ -268,8 +282,9 @@ resource "aws_lambda_function" "collector" {
 
 # SQS trigger for the collector Lambda
 resource "aws_lambda_event_source_mapping" "sqs_trigger" {
-  event_source_arn = aws_sqs_queue.health_events.arn
-  function_name    = aws_lambda_function.collector.arn
-  batch_size       = 1
-  enabled          = true
+  event_source_arn        = aws_sqs_queue.health_events.arn
+  function_name           = aws_lambda_function.collector.arn
+  batch_size              = 1
+  enabled                 = true
+  function_response_types = ["ReportBatchItemFailures"]
 }

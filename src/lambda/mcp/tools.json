@@ -934,13 +934,13 @@
             },
             {
                 "name": "get_recent_events",
-                "description": "Get most recent health events from the last N days, sorted by update time.",
+                "description": "Get the current Health event inventory: all open and upcoming events regardless of age, followed by closed events updated within the last N days. Use this for broad questions such as \"what health events do I have?\". A status filter returns all matching open/upcoming events or matching recently closed events.",
                 "input_schema": {
                     "type": "object",
                     "properties": {
                         "days_back": {
                             "type": "integer",
-                            "description": "Days to look back (default: 7)"
+                            "description": "Days to look back for closed events (default: 7); open and upcoming events are not time-limited"
                         },
                         "status": {
                             "type": "string",
@@ -987,6 +987,125 @@
                     },
                     "required": [
                         "event_arn"
+                    ]
+                }
+            }
+        ]
+    },
+    "devops-agent": {
+        "handler": "handler.handler",
+        "runtime": "python3.12",
+        "timeout": 60,
+        "memory": 256,
+        "iam_actions": [
+            "dynamodb:GetItem"
+        ],
+        "needs_health_events": true,
+        "needs_devops_agent": true,
+        "tools": [
+            {
+                "name": "investigate_health_event",
+                "description": "Start or retrieve the AWS DevOps Agent investigation for one stored Health event. Deferred account-association, capacity, and rate-limit states are immediately rechecked. Existing terminal investigations are returned and are never duplicated. Mock-derived investigations are explicitly labeled.",
+                "input_schema": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "event_arn": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048,
+                            "pattern": "^arn:",
+                            "description": "Full ARN of the stored AWS Health event."
+                        },
+                        "account_id": {
+                            "type": "string",
+                            "pattern": "^[0-9]{12}$",
+                            "description": "Affected AWS account ID."
+                        }
+                    },
+                    "required": [
+                        "event_arn",
+                        "account_id"
+                    ]
+                }
+            },
+            {
+                "name": "investigate_operational_issue",
+                "description": "Start or retrieve an AWS DevOps Agent investigation for an explicitly requested operational incident such as a CloudWatch alarm. Use a stable source_id for the incident occurrence (for an alarm, alarm ARN plus state transition timestamp) so retries do not create duplicates. This is advisory-only and does not approve or perform remediation.",
+                "input_schema": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "account_id": {
+                            "type": "string",
+                            "pattern": "^[0-9]{12}$",
+                            "description": "AWS account ID associated with the operational issue."
+                        },
+                        "source_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000,
+                            "description": "Stable unique identifier for this incident occurrence, such as alarm ARN plus state_updated_timestamp."
+                        },
+                        "title": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 400,
+                            "description": "Concise investigation title."
+                        },
+                        "description": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 10000,
+                            "description": "Evidence-grounded incident description including region, alarm state/reason, affected metrics, dimensions, and resource identifiers when available."
+                        },
+                        "priority": {
+                            "type": "string",
+                            "enum": [
+                                "CRITICAL",
+                                "HIGH",
+                                "MEDIUM",
+                                "LOW",
+                                "MINIMAL"
+                            ],
+                            "description": "Investigation priority. Defaults to HIGH."
+                        }
+                    },
+                    "required": [
+                        "account_id",
+                        "source_id",
+                        "title",
+                        "description"
+                    ]
+                }
+            },
+            {
+                "name": "get_health_investigation",
+                "description": "Read the current platform and provider status, compact redacted outcome, and optionally the selected activity milestones for one Health investigation.",
+                "input_schema": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "event_arn": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 2048,
+                            "pattern": "^arn:",
+                            "description": "Full ARN of the stored AWS Health event."
+                        },
+                        "account_id": {
+                            "type": "string",
+                            "pattern": "^[0-9]{12}$",
+                            "description": "Affected AWS account ID."
+                        },
+                        "include_activity": {
+                            "type": "boolean",
+                            "description": "Include selected redacted activity milestones. Defaults to false."
+                        }
+                    },
+                    "required": [
+                        "event_arn",
+                        "account_id"
                     ]
                 }
             }

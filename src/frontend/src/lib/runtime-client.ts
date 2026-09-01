@@ -102,6 +102,57 @@ export interface Report {
     total_sections: number;
 }
 
+export interface InvestigationMilestone {
+    id: string;
+    title: string;
+    createdAt: string;
+    details: string;
+    kind: "symptom" | "finding" | "gap";
+}
+
+export interface InvestigationOutcomeItem {
+    title: string;
+    description: string;
+    startedAt?: string | null;
+    endedAt?: string | null;
+}
+
+export interface InvestigationMitigation {
+    status: string;
+    terminal: boolean;
+    action: string;
+    description: string;
+    updatedAt?: string | null;
+}
+
+export interface InvestigationActivityResponse {
+    investigation: {
+        investigationId: string;
+        title: string;
+        workflowState: string;
+        providerStatus: string;
+        reason: string | null;
+        createdAt: string;
+        updatedAt: string;
+        completedAt: string | null;
+        terminal: boolean;
+        providerUrl: string | null;
+    };
+    outcome: {
+        incident: InvestigationOutcomeItem | null;
+        rootCause: InvestigationOutcomeItem | null;
+        mitigation: InvestigationMitigation | null;
+    };
+    activity: InvestigationMilestone[];
+    revision: string;
+}
+
+export interface InvestigationFetchResult {
+    notModified: boolean;
+    etag: string | null;
+    data?: InvestigationActivityResponse;
+}
+
 type GetTokenFn = () => Promise<string | null>;
 
 // ---------------------------------------------------------------------------
@@ -197,6 +248,38 @@ export async function deleteReport(reportId: string, userId: string, getToken: G
 }
 
 // ---------------------------------------------------------------------------
+export async function getInvestigationActivity(
+    investigationId: string,
+    getToken: GetTokenFn,
+    etag?: string,
+    refresh = false,
+): Promise<InvestigationFetchResult> {
+    const baseUrl = await getFrontendApiUrl();
+    if (!baseUrl) throw new Error("Frontend API URL not configured");
+    const token = await getToken();
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    if (etag && !refresh) headers["If-None-Match"] = etag;
+
+    const response = await fetch(
+        `${baseUrl.replace(/\/+$/, "")}/devops-agent/investigations/${encodeURIComponent(investigationId)}`,
+        { method: refresh ? "POST" : "GET", headers },
+    );
+    const responseEtag = response.headers.get("ETag");
+    if (response.status === 304) {
+        return { notModified: true, etag: responseEtag || etag || null };
+    }
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`API ${response.status}: ${text}`);
+    }
+    return {
+        notModified: false,
+        etag: responseEtag,
+        data: await response.json() as InvestigationActivityResponse,
+    };
+}
+
 // Thread activity — per-thread busy state for cross-tab/navigate-away awareness
 // ---------------------------------------------------------------------------
 export interface ThreadActivity {

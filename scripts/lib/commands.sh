@@ -518,7 +518,8 @@ _configure_prompts() {
   fi
   if [ "$tools_mode" = "custom" ]; then
     echo "   Available: cost-explorer, cur-athena, cost-optimization-hub,"
-    echo "              health-events, billing, pricing, network-resilience, tag-governance"
+    echo "              health-events, billing, pricing, network-resilience, tag-governance,"
+    echo "              cloudwatch, lambda-runtime, devops-agent"
     shared_config_prompt custom_tools "Tools (comma-separated)" "$existing_tools"
     _answers_set SELECTED_TOOLS "$custom_tools"
   else
@@ -530,7 +531,7 @@ _configure_prompts() {
   # list.
   local active_tools; active_tools="$(_answers_get SELECTED_TOOLS)"
   if [ -z "$active_tools" ]; then
-    active_tools="cost-explorer,cur-athena,cost-optimization-hub,health-events,billing,pricing,network-resilience,tag-governance"
+    active_tools="cost-explorer,cur-athena,cost-optimization-hub,health-events,billing,pricing,network-resilience,tag-governance,cloudwatch,lambda-runtime,devops-agent"
   fi
 
   # -------------------------------------------------------------------------
@@ -606,7 +607,7 @@ _configure_prompts() {
   # -------------------------------------------------------------------------
   # TOOL-SPECIFIC CONFIG — conditional on selections above.
   # -------------------------------------------------------------------------
-  local need_ce_xacct need_coh_xacct need_cur need_health_xacct need_netres_xacct need_cw_xacct
+  local need_ce_xacct need_coh_xacct need_cur need_health_xacct need_netres_xacct need_cw_xacct need_devops_agent
   case ",$active_tools," in
     *,cost-explorer,*)          need_ce_xacct=1 ;;
     *)                          need_ce_xacct=0 ;;
@@ -631,10 +632,14 @@ _configure_prompts() {
     *,cloudwatch,*)             need_cw_xacct=1 ;;
     *)                          need_cw_xacct=0 ;;
   esac
+  case ",$active_tools," in
+    *,devops-agent,*)           need_devops_agent=1 ;;
+    *)                          need_devops_agent=0 ;;
+  esac
 
   if [ "$need_ce_xacct" = 1 ] || [ "$need_coh_xacct" = 1 ] || [ "$need_cur" = 1 ] \
      || [ "$need_health_xacct" = 1 ] || [ "$need_netres_xacct" = 1 ] \
-     || [ "$need_cw_xacct" = 1 ]; then
+     || [ "$need_cw_xacct" = 1 ] || [ "$need_devops_agent" = 1 ]; then
     echo
     echo "=== Tool-specific config ==="
     echo
@@ -689,6 +694,59 @@ _configure_prompts() {
       _answers_set CROSS_ACCOUNT_HEALTH_ROLE_ARN "$health_arn"
     else
       _answers_set CROSS_ACCOUNT_HEALTH_ROLE_ARN ""
+    fi
+  fi
+
+  if [ "$need_devops_agent" = 1 ]; then
+    local devops_enabled devops_space_id devops_space_region
+    local devops_auto devops_concurrency devops_budget
+    local devops_max_age devops_sweep devops_coverage_ttl
+    local current_devops_enabled devops_enabled_default
+    current_devops_enabled="$(shared_config_get DEVOPS_AGENT_INTEGRATION_ENABLED false)"
+    [ "$current_devops_enabled" = "true" ] && devops_enabled_default="Y" || devops_enabled_default="N"
+    shared_config_prompt_yn devops_enabled \
+      "devops-agent: enable native integration?" \
+      "$devops_enabled_default"
+    _answers_set DEVOPS_AGENT_INTEGRATION_ENABLED "$devops_enabled"
+    if [ "$devops_enabled" = "true" ]; then
+      shared_config_prompt devops_space_id "  Agent Space ID" \
+        "$(shared_config_get DEVOPS_AGENT_SPACE_ID "")"
+      if [ -z "$devops_space_id" ]; then
+        log_error "Agent Space ID is required when the DevOps Agent integration is enabled."
+        return 1
+      fi
+      shared_config_prompt devops_space_region "  Agent Space Region (empty = platform Region)" \
+        "$(shared_config_get DEVOPS_AGENT_SPACE_REGION "")"
+      local current_devops_auto devops_auto_default
+      current_devops_auto="$(shared_config_get DEVOPS_AGENT_HEALTH_AUTOMATIC_ENABLED false)"
+      [ "$current_devops_auto" = "true" ] && devops_auto_default="Y" || devops_auto_default="N"
+      if [ "$need_health_xacct" = 1 ]; then
+        shared_config_prompt_yn devops_auto \
+          "  Automatically investigate ACTION_REQUIRED and open issue Health events?" \
+          "$devops_auto_default"
+      else
+        devops_auto="false"
+      fi
+      shared_config_prompt devops_concurrency "  Maximum active investigations" \
+        "$(shared_config_get DEVOPS_AGENT_MAX_CONCURRENCY 2)"
+      shared_config_prompt devops_budget "  Automatic investigations per UTC day" \
+        "$(shared_config_get DEVOPS_AGENT_AUTOMATIC_DAILY_BUDGET 10)"
+      shared_config_prompt devops_max_age "  Maximum investigation age in minutes" \
+        "$(shared_config_get DEVOPS_AGENT_MAX_AGE_MINUTES 120)"
+      shared_config_prompt devops_sweep "  Reconciliation interval in minutes" \
+        "$(shared_config_get DEVOPS_AGENT_SWEEP_INTERVAL_MINUTES 5)"
+      shared_config_prompt devops_coverage_ttl "  Coverage cache TTL in seconds" \
+        "$(shared_config_get DEVOPS_AGENT_COVERAGE_CACHE_TTL_SECONDS 300)"
+      _answers_set DEVOPS_AGENT_SPACE_ID "$devops_space_id"
+      _answers_set DEVOPS_AGENT_SPACE_REGION "$devops_space_region"
+      _answers_set DEVOPS_AGENT_HEALTH_AUTOMATIC_ENABLED "$devops_auto"
+      _answers_set DEVOPS_AGENT_MAX_CONCURRENCY "$devops_concurrency"
+      _answers_set DEVOPS_AGENT_AUTOMATIC_DAILY_BUDGET "$devops_budget"
+      _answers_set DEVOPS_AGENT_MAX_AGE_MINUTES "$devops_max_age"
+      _answers_set DEVOPS_AGENT_SWEEP_INTERVAL_MINUTES "$devops_sweep"
+      _answers_set DEVOPS_AGENT_COVERAGE_CACHE_TTL_SECONDS "$devops_coverage_ttl"
+    else
+      _answers_set DEVOPS_AGENT_HEALTH_AUTOMATIC_ENABLED "false"
     fi
   fi
 

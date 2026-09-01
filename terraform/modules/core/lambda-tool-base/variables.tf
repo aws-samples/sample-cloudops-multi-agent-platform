@@ -18,6 +18,11 @@ variable "lambda_zip_path" {
   type        = string
 }
 
+variable "artifact_bucket" {
+  description = "S3 bucket used for content-addressed Lambda deployment packages"
+  type        = string
+}
+
 variable "handler" {
   description = "Lambda handler (e.g., handler.handler)"
   type        = string

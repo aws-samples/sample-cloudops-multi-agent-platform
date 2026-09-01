@@ -1750,6 +1750,31 @@ def _save_enriched_response(
             )
     except Exception as exc:  # never let viz extraction break the save
         logger.warning("visualizer-state extraction failed: %s", exc)
+    try:
+        from agents.shared.investigation_extract import (
+            extract_investigation_references,
+        )
+
+        references = extract_investigation_references(
+            [s for s in ordered_segments if s.get("type") == "tool"]
+        )
+        existing_ids = set()
+        for segment in ordered_segments:
+            if segment.get("type") != "investigation_ref":
+                continue
+            parsed = json.loads(segment["value"])
+            existing_ids.add(parsed.get("investigationId"))
+        for reference in references:
+            if reference["investigationId"] in existing_ids:
+                continue
+            ordered_segments.append(
+                {
+                    "type": "investigation_ref",
+                    "value": json.dumps(reference, separators=(",", ":")),
+                }
+            )
+    except Exception as exc:
+        logger.warning("investigation-ref extraction failed: %s", exc)
     enriched_text = build_enriched_text(ordered_segments)
     save_assistant_message(memory_id, session_id, actor_id, enriched_text, region)
 

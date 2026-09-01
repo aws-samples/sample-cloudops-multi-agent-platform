@@ -165,6 +165,14 @@ resource "aws_iam_role_policy" "agentcore_execution" {
         ]
         Resource = var.agentcore_gateway_arn
       }] : [],
+      var.investigations_table_arn != "" ? [{
+        Effect = "Allow"
+        Action = [
+          "dynamodb:BatchGetItem",
+          "dynamodb:GetItem",
+        ]
+        Resource = var.investigations_table_arn
+      }] : [],
       # KMS access for the CMK-encrypted DynamoDB tables (registry + reports).
       # Decrypt is required to READ (registry scan, report GetItem); GenerateDataKey
       # is required to WRITE (report PutItem/UpdateItem). Without these, the
@@ -234,6 +242,7 @@ resource "aws_bedrockagentcore_agent_runtime" "this" {
       AWS_REGION                 = data.aws_region.current.region
       AWS_DEFAULT_REGION         = data.aws_region.current.region
       REPORT_TABLE_NAME          = var.report_table_name
+      INVESTIGATIONS_TABLE_NAME  = var.investigations_table_name
       REDACT_IDENTIFIERS         = var.redact_identifiers ? "true" : "false"
     },
     var.bedrock_model_id != "" ? { BEDROCK_MODEL_ID = var.bedrock_model_id } : {},
@@ -267,4 +276,3 @@ resource "aws_bedrockagentcore_agent_runtime_endpoint" "this" {
     Name = "${var.project_tag}-agentcore-runtime-endpoint"
   })
 }
-

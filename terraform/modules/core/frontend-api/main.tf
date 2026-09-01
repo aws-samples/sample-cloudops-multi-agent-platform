@@ -124,10 +124,11 @@ resource "aws_apigatewayv2_api" "frontend" {
   protocol_type = "HTTP"
 
   cors_configuration {
-    allow_origins = var.allowed_origins
-    allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    allow_headers = ["Content-Type", "Authorization"]
-    max_age       = 86400
+    allow_origins  = var.allowed_origins
+    allow_methods  = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allow_headers  = ["Content-Type", "Authorization", "If-None-Match"]
+    expose_headers = ["ETag"]
+    max_age        = 86400
   }
 
   tags = local.common_tags
